@@ -10,7 +10,7 @@
 # ----------------------------------------------------------------------------
 resource "aws_security_group" "alb" {
   name        = "${local.name_prefix}-alb-sg"
-  description = "Public ALB. Accepts HTTPS on 8443 from the internet."
+  description = "Public ALB. Accepts HTTPS on 443 and HTTP on 80 (redirect) from the internet."
   vpc_id      = module.vpc.vpc_id
   tags        = merge(local.common_tags, { Name = "${local.name_prefix}-alb-sg" })
 }
@@ -21,6 +21,18 @@ resource "aws_vpc_security_group_ingress_rule" "alb_https" {
   ip_protocol       = "tcp"
   from_port         = local.alb_https_port
   to_port           = local.alb_https_port
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+# Plain HTTP only exists so the ALB can issue a 301 to HTTPS. No traffic
+# reaches the app tier on port 80; the ALB's own listener handles the
+# redirect locally.
+resource "aws_vpc_security_group_ingress_rule" "alb_http_redirect" {
+  security_group_id = aws_security_group.alb.id
+  description       = "Public HTTP (redirect to HTTPS)"
+  ip_protocol       = "tcp"
+  from_port         = local.alb_http_port
+  to_port           = local.alb_http_port
   cidr_ipv4         = "0.0.0.0/0"
 }
 

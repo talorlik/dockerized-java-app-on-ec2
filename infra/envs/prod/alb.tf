@@ -1,5 +1,6 @@
 ###############################################################################
-# ALB - public, HTTPS on 8443, ACM cert from DEPLOYMENT account.
+# ALB - public, HTTPS on 443 (with HTTP/80 -> HTTPS redirect), ACM cert from
+# DEPLOYMENT account.
 #
 # Target group is on HTTP 8080 against EC2 instances. Access logs land in S3.
 ###############################################################################
@@ -165,7 +166,9 @@ module "alb" {
   }
 
   listeners = {
-    https_8443 = {
+    # Public HTTPS - terminates TLS using the wildcard ACM cert and forwards
+    # to the app target group on HTTP/8080.
+    https = {
       port            = local.alb_https_port
       protocol        = "HTTPS"
       ssl_policy      = "ELBSecurityPolicy-TLS13-1-2-2021-06"
@@ -175,6 +178,19 @@ module "alb" {
         target_group_key = "app"
       }
     }
+
+    # Public HTTP - 301 redirect to HTTPS so users typing
+    # http://java.talorlik.com land on the secure URL automatically.
+    http_redirect = {
+      port     = local.alb_http_port
+      protocol = "HTTP"
+
+      redirect = {
+        port        = tostring(local.alb_https_port)
+        protocol    = "HTTPS"
+        status_code = "HTTP_301"
+      }
+    }
   }
 
   # Ensure the ELB SLR is in place before creating the ALB.
@@ -182,12 +198,12 @@ module "alb" {
 
   target_groups = {
     app = {
-      name              = "${local.name_prefix}-tg"
-      backend_protocol  = "HTTP"
-      backend_port      = local.app_port
-      target_type       = "instance"
+      name                 = "${local.name_prefix}-tg"
+      backend_protocol     = "HTTP"
+      backend_port         = local.app_port
+      target_type          = "instance"
       deregistration_delay = 30
-      protocol_version  = "HTTP1"
+      protocol_version     = "HTTP1"
 
       # Don't auto-register - the ASG handles target registration.
       create_attachment = false

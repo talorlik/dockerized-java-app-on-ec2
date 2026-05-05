@@ -22,9 +22,10 @@ locals {
     log_group_app      = "${local.secret_prefix}/log-group/app"
   }
 
-  app_port      = 8080
-  alb_https_port = 8443
-  db_port       = 3306
+  app_port       = 8080
+  alb_https_port = 443
+  alb_http_port  = 80
+  db_port        = 3306
 
   # Subnet CIDRs derived from var.vpc_cidr (a /16). Reserves /24s in the /16
   # so each tier gets up to 4 AZs without renumbering.

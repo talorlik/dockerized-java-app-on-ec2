@@ -42,6 +42,7 @@ build/
 .settings/
 .vscode/
 .cursor/
+.cowork/
 
 # Frontend / node
 node_modules/
@@ -71,4 +72,3 @@ crash.log
 # OS
 .DS_Store
 Thumbs.db
-

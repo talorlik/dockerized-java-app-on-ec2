@@ -75,7 +75,7 @@ output "alarms_topic_arn" {
 }
 
 output "app_url" {
-  value = "https://${var.app_subdomain}:${local.alb_https_port}"
+  value = "https://${var.app_subdomain}"
 }
 
 output "ses_dkim_tokens" {

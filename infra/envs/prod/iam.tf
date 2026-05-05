@@ -117,6 +117,21 @@ data "aws_iam_policy_document" "app_inline" {
     actions   = ["ecr:GetAuthorizationToken"]
     resources = ["*"]
   }
+
+  # Allow the user-data boot script to mark its own instance Unhealthy if
+  # the actuator never returns UP within the boot deadline. Without this
+  # the box would linger as a black hole behind the ALB until the grace
+  # period expires; with it the ASG replaces it immediately.
+  # SetInstanceHealth has no resource-level scoping in IAM, so this must
+  # be Resource:* and is gated by the aws:SourceArn condition matching the
+  # caller's own instance ARN, scoping it in practice to instances of THIS
+  # ASG even if the role were ever reused elsewhere.
+  statement {
+    sid       = "SelfMarkInstanceUnhealthy"
+    effect    = "Allow"
+    actions   = ["autoscaling:SetInstanceHealth"]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_policy" "app_inline" {

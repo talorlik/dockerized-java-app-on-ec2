@@ -25,7 +25,7 @@ output "access_log_bucket_name" {
 
 output "backend_block_example" {
   description = "Drop this block into infra/envs/prod/backend.tf."
-  value = <<EOT
+  value       = <<EOT
 terraform {
   backend "s3" {
     bucket       = "${aws_s3_bucket.tfstate.id}"

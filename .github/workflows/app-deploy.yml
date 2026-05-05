@@ -120,7 +120,7 @@ jobs:
       - name: Post-deploy smoke
         run: |
           for i in $(seq 1 30); do
-            if curl -fsS --max-time 10 "https://java.talorlik.com:8443/actuator/health" | grep -q '"status":"UP"'; then
+            if curl -fsS --max-time 10 "https://java.talorlik.com/actuator/health" | grep -q '"status":"UP"'; then
               echo "smoke ok"; exit 0
             fi
             sleep 10

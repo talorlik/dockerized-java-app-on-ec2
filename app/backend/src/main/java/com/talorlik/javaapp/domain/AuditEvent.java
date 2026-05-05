@@ -24,8 +24,10 @@ public class AuditEvent {
     private String target;
 
     // JSON column - persisted as string. Avoid storing sensitive data here.
-    @Lob
-    @Column(name = "metadata")
+    // columnDefinition pins Hibernate schema validation to the MySQL JSON
+    // type used by V4__create_audit_events.sql; without this, @Lob on a
+    // String maps to TINYTEXT/CLOB and validation fails against JSON.
+    @Column(name = "metadata", columnDefinition = "json")
     private String metadata;
 
     @Column(name = "created_at", nullable = false, updatable = false)

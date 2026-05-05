@@ -69,6 +69,6 @@ app:
     verify-per-minute: 10
     signup-per-hour: 20
   cors:
-    allowed-origin: ${APP_PUBLIC_URL:https://java.talorlik.com:8443}
+    allowed-origin: ${APP_PUBLIC_URL:https://java.talorlik.com}
   ses:
     enabled: ${SES_ENABLED:true}

@@ -2,7 +2,8 @@
 
 ## Network
 
-- ALB is the only public surface. Listener: HTTPS `8443`.
+- ALB is the only public surface. Listeners: HTTPS `443` (TLS termination)
+  and HTTP `80` (301 redirect to HTTPS, no traffic forwarded to the app tier).
 - EC2 has no public IPs and no SSH ingress. Access via SSM Session Manager.
 - RDS is in private DB subnets and has no public endpoint.
 - Inter-tier rules use SG references, not CIDRs.

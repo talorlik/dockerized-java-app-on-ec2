@@ -1,0 +1,135 @@
+###############################################################################
+# app-destroy
+#
+# Tears down only the application-layer artifacts (ECR images, ASG instances,
+# SSM release pointers, S3 compose object). Leaves the underlying
+# infrastructure intact so a fresh deploy can come up over the same VPC/ALB/RDS.
+#
+# Sequence:
+#   1. Confirm the user typed the destroy phrase exactly.
+#   2. Set the ASG min/desired/max to 0 and wait until in-service count is 0.
+#      This stops the running containers without churning the launch template.
+#   3. Reset the three SSM release pointers to "bootstrap" so a future
+#      instance launch won't try to pull a deleted image tag.
+#   4. Delete the docker-compose.prod.yml S3 object referenced by the
+#      compose-object SSM parameter.
+#   5. Empty both ECR repositories (delete every image / image-index in
+#      `java-app/backend` and `java-app/frontend`).
+#
+# Use `infra-destroy.yml` afterwards to remove the underlying infrastructure
+# itself.
+###############################################################################
+name: app-destroy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type DESTROY (uppercase) to confirm'
+        required: true
+        default: ''
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: app-destroy
+  cancel-in-progress: false
+
+jobs:
+  destroy:
+    name: tear down app layer
+    runs-on: ubuntu-latest
+    environment: prod   # forces the environment-protection rule (manual approval)
+    steps:
+      - name: Validate confirmation phrase
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "DESTROY" ]; then
+            echo "::error::confirm input must be exactly 'DESTROY'."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEPLOYMENT_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: gha-app-destroy
+
+      # -------------------------------------------------------------------
+      # 1. Resolve ASG name (deterministic in this stack, but follow the
+      #    same Tags-based lookup the deploy workflow uses).
+      # -------------------------------------------------------------------
+      - id: asg
+        name: Resolve ASG name
+        run: |
+          NAME=$(aws autoscaling describe-auto-scaling-groups \
+            --query "AutoScalingGroups[?Tags[?Key=='Project' && Value=='java-app'] && Tags[?Key=='Environment' && Value=='prod']].AutoScalingGroupName | [0]" \
+            --output text)
+          if [ "$NAME" = "None" ] || [ -z "$NAME" ]; then
+            NAME="java-app-prod-asg"
+          fi
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
+      # -------------------------------------------------------------------
+      # 2. Scale ASG to 0 and wait for instances to drain.
+      # -------------------------------------------------------------------
+      - name: Scale ASG to 0
+        run: |
+          aws autoscaling update-auto-scaling-group \
+            --auto-scaling-group-name "${{ steps.asg.outputs.name }}" \
+            --min-size 0 --desired-capacity 0 --max-size 0
+
+      - name: Wait for ASG to drain
+        run: |
+          for i in $(seq 1 60); do
+            COUNT=$(aws autoscaling describe-auto-scaling-groups \
+              --auto-scaling-group-names "${{ steps.asg.outputs.name }}" \
+              --query "AutoScalingGroups[0].Instances | length(@)" \
+              --output text)
+            echo "in-service instances: $COUNT"
+            if [ "$COUNT" = "0" ]; then exit 0; fi
+            sleep 15
+          done
+          echo "::error::timed out waiting for ASG to drain"
+          exit 1
+
+      # -------------------------------------------------------------------
+      # 3. Reset release pointers so a re-scale doesn't pull a deleted tag.
+      # -------------------------------------------------------------------
+      - name: Reset SSM release pointers to 'bootstrap'
+        run: |
+          for p in /java-app/prod/backend-image-tag /java-app/prod/frontend-image-tag /java-app/prod/release-id; do
+            aws ssm put-parameter --name "$p" --type String --overwrite --value "bootstrap"
+          done
+
+      # -------------------------------------------------------------------
+      # 4. Delete the published compose-object from S3.
+      # -------------------------------------------------------------------
+      - name: Delete compose object in S3
+        run: |
+          BUCKET="java-app-prod-config-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
+          aws s3 rm "s3://$BUCKET/docker-compose.prod.yml" || true
+
+      # -------------------------------------------------------------------
+      # 5. Empty both ECR repositories.
+      # -------------------------------------------------------------------
+      - name: Purge ECR images
+        run: |
+          for repo in java-app/backend java-app/frontend; do
+            echo "purging $repo"
+            IDS=$(aws ecr list-images --repository-name "$repo" --query 'imageIds[*]' --output json)
+            COUNT=$(echo "$IDS" | jq 'length')
+            if [ "$COUNT" -gt 0 ]; then
+              # batch-delete-image accepts up to 100 image IDs at a time;
+              # if there are more, page in chunks.
+              echo "$IDS" | jq -c '. as $a | range(0; ($a | length); 100) | $a[.:.+100]' | \
+                while read -r CHUNK; do
+                  aws ecr batch-delete-image \
+                    --repository-name "$repo" \
+                    --image-ids "$CHUNK"
+                done
+            fi
+          done

@@ -5,14 +5,14 @@ EC2 ASG behind a public ALB, fronted by Nginx, persisted in RDS MySQL, with
 secrets in Secrets Manager, releases tracked in SSM Parameter Store, and
 ship-by-merge CI/CD via GitHub Actions OIDC.
 
-Public endpoint: `https://java.talorlik.com:8443`.
+Public endpoint: `https://java.talorlik.com` (HTTP/80 is redirected to HTTPS/443).
 
 ## Topology
 
 ```
 Internet
   |
-  | HTTPS :8443
+  | HTTPS :443  (HTTP :80 -> 301 -> HTTPS :443)
   v
 Route53 (DOMAIN account) - A alias  java.talorlik.com
   |
@@ -69,7 +69,7 @@ RDS MySQL (private DB subnets, Multi-AZ, encrypted)
    ```
    aws secretsmanager get-secret-value --secret-id /java-app/prod/admin --query SecretString --output text
    ```
-10. Hit `https://java.talorlik.com:8443`, log in as admin, create a regular user.
+10. Hit `https://java.talorlik.com`, log in as admin, create a regular user.
 
 Detailed steps live in `docs/` 00 through 05.
 

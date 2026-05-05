@@ -72,14 +72,14 @@ module "rds" {
   port     = local.db_port
 
   # RDS-managed master password in Secrets Manager (rotated by AWS).
-  manage_master_user_password                            = true
-  master_user_secret_kms_key_id                          = aws_kms_key.app_secrets.arn
-  master_user_password_rotate_immediately                = false
+  manage_master_user_password             = true
+  master_user_secret_kms_key_id           = aws_kms_key.app_secrets.arn
+  master_user_password_rotate_immediately = false
 
-  multi_az             = true
-  publicly_accessible  = false
+  multi_az               = true
+  publicly_accessible    = false
   vpc_security_group_ids = [aws_security_group.rds.id]
-  db_subnet_group_name = module.vpc.database_subnet_group_name
+  db_subnet_group_name   = module.vpc.database_subnet_group_name
 
   backup_retention_period          = 14
   backup_window                    = "03:00-04:00"

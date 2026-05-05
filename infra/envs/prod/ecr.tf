@@ -41,10 +41,10 @@ resource "aws_ecr_lifecycle_policy" "this" {
         rulePriority = 1
         description  = "Keep last 30 SHA-tagged images"
         selection = {
-          tagStatus     = "tagged"
+          tagStatus      = "tagged"
           tagPatternList = ["sha-*", "v*"]
-          countType     = "imageCountMoreThan"
-          countNumber   = 30
+          countType      = "imageCountMoreThan"
+          countNumber    = 30
         }
         action = { type = "expire" }
       },

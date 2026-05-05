@@ -34,22 +34,22 @@ resource "aws_ssm_parameter" "log_group_app" {
 # ----------------------------------------------------------------------------
 locals {
   user_data = base64encode(templatefile("${path.module}/templates/user_data.sh.tpl", {
-    aws_region          = var.aws_region
-    ssm_compose_object  = local.ssm_keys.compose_object
-    ssm_backend_tag     = local.ssm_keys.backend_image_tag
-    ssm_frontend_tag    = local.ssm_keys.frontend_image_tag
-    ssm_release_id      = local.ssm_keys.release_id
-    ssm_db_endpoint     = local.ssm_keys.db_endpoint
-    ssm_db_name         = local.ssm_keys.db_name
-    secret_db_app_user  = aws_secretsmanager_secret.db_app_user.name
-    secret_admin        = aws_secretsmanager_secret.admin.name
-    secret_jwt          = aws_secretsmanager_secret.jwt.name
-    secret_ses          = aws_secretsmanager_secret.ses.name
-    backend_repo_url    = aws_ecr_repository.this["backend"].repository_url
-    frontend_repo_url   = aws_ecr_repository.this["frontend"].repository_url
-    log_group_name      = aws_cloudwatch_log_group.app.name
-    deployment_account  = var.deployment_account_id
-    app_subdomain       = var.app_subdomain
+    aws_region         = var.aws_region
+    ssm_compose_object = local.ssm_keys.compose_object
+    ssm_backend_tag    = local.ssm_keys.backend_image_tag
+    ssm_frontend_tag   = local.ssm_keys.frontend_image_tag
+    ssm_release_id     = local.ssm_keys.release_id
+    ssm_db_endpoint    = local.ssm_keys.db_endpoint
+    ssm_db_name        = local.ssm_keys.db_name
+    secret_db_app_user = aws_secretsmanager_secret.db_app_user.name
+    secret_admin       = aws_secretsmanager_secret.admin.name
+    secret_jwt         = aws_secretsmanager_secret.jwt.name
+    secret_ses         = aws_secretsmanager_secret.ses.name
+    backend_repo_url   = aws_ecr_repository.this["backend"].repository_url
+    frontend_repo_url  = aws_ecr_repository.this["frontend"].repository_url
+    log_group_name     = aws_cloudwatch_log_group.app.name
+    deployment_account = var.deployment_account_id
+    app_subdomain      = var.app_subdomain
   }))
 }
 
@@ -62,12 +62,18 @@ module "asg" {
 
   name = "${local.name_prefix}-asg"
 
-  min_size                  = var.asg_min_size
-  desired_capacity          = var.asg_desired_capacity
-  max_size                  = var.asg_max_size
-  vpc_zone_identifier       = module.vpc.private_subnets
-  health_check_type         = "ELB"
-  health_check_grace_period = 300
+  min_size            = var.asg_min_size
+  desired_capacity    = var.asg_desired_capacity
+  max_size            = var.asg_max_size
+  vpc_zone_identifier = module.vpc.private_subnets
+  health_check_type   = "ELB"
+
+  # First boot on a fresh Ubuntu image runs apt + AWS CLI v2 install + CWA
+  # install + ECR pull + Spring Boot startup. On t3.small with cold caches
+  # this regularly takes 4-7 min. 300s grace was racing the slowest path
+  # and producing one unhealthy instance per refresh; 600s gives Spring
+  # Boot plus the actuator probe enough headroom.
+  health_check_grace_period = 600
 
   # Attach to ALB target group created in alb.tf.
   target_group_arns = [module.alb.target_groups["app"].arn]
@@ -144,8 +150,10 @@ module "asg" {
     preferences = {
       min_healthy_percentage = 100
       max_healthy_percentage = 200
-      instance_warmup        = 180
-      auto_rollback          = true
+      # Match health_check_grace_period; warmup of 180s undercounts a cold
+      # boot and starts pre-tracking metrics on a not-yet-ready instance.
+      instance_warmup = 300
+      auto_rollback   = true
     }
     triggers = ["tag"]
   }

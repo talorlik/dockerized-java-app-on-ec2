@@ -16,7 +16,7 @@
    - Pushes to ECR.
    - Updates SSM release params.
    - Starts ASG instance refresh and polls until `Successful`.
-   - Smoke checks `https://java.talorlik.com:8443/actuator/health`.
+   - Smoke checks `https://java.talorlik.com/actuator/health`.
 
 ## Manual override
 
@@ -28,7 +28,7 @@ gh workflow run app-deploy.yml -f image_tag=sha-1234567890ab
 
 ```bash
 # Public TLS handshake
-curl -vI https://java.talorlik.com:8443/actuator/health
+curl -vI https://java.talorlik.com/actuator/health
 
 # Healthy targets in the target group
 aws elbv2 describe-target-health \
@@ -48,4 +48,4 @@ aws secretsmanager get-secret-value \
   --query SecretString --output text | jq .
 ```
 
-Use the `username`/`password` to log in at `https://java.talorlik.com:8443/login`.
+Use the `username`/`password` to log in at `https://java.talorlik.com/login`.
