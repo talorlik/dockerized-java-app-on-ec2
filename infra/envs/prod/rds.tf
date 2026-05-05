@@ -81,13 +81,13 @@ module "rds" {
   vpc_security_group_ids = [aws_security_group.rds.id]
   db_subnet_group_name = module.vpc.database_subnet_group_name
 
-  backup_retention_period   = 14
-  backup_window             = "03:00-04:00"
-  maintenance_window        = "Sun:04:30-Sun:05:30"
-  deletion_protection       = true
-  delete_automated_backups  = false
-  skip_final_snapshot       = false
-  final_snapshot_identifier = "${local.name_prefix}-mysql-final-${formatdate("YYYYMMDDhhmmss", timestamp())}"
+  backup_retention_period          = 14
+  backup_window                    = "03:00-04:00"
+  maintenance_window               = "Sun:04:30-Sun:05:30"
+  deletion_protection              = true
+  delete_automated_backups         = false
+  skip_final_snapshot              = false
+  final_snapshot_identifier_prefix = "${local.name_prefix}-mysql-final"
 
   performance_insights_enabled          = true
   performance_insights_retention_period = 7
@@ -96,9 +96,9 @@ module "rds" {
   create_monitoring_role = true
   monitoring_role_name   = "${local.name_prefix}-rds-monitoring"
 
-  parameter_group_name           = aws_db_parameter_group.mysql.name
-  use_existing_parameter_group   = false
-  create_db_parameter_group      = false
+  # Use the parameter group we manage outside the module (above).
+  parameter_group_name            = aws_db_parameter_group.mysql.name
+  create_db_parameter_group       = false
   enabled_cloudwatch_logs_exports = ["error", "general", "slowquery"]
 
   tags = local.common_tags
