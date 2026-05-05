@@ -1,0 +1,41 @@
+###############################################################################
+# Copy to terraform.tfvars (or pass via -var-file) and fill in.
+# Sensitive values should NOT be committed - prefer GitHub repo variables/
+# secrets surfaced as TF_VAR_* environment variables in CI.
+###############################################################################
+
+aws_region                       = "us-east-1"
+project                          = "java-app"
+environment                      = "prod"
+
+deployment_account_id            = "111111111111"
+domain_account_id                = "222222222222"
+domain_account_route53_role_arn  = "arn:aws:iam::222222222222:role/route53-dns-manager-role"
+
+hosted_zone_id                   = "Z0123456789ABCDEFGHIJ"
+root_domain                      = "talorlik.com"
+app_subdomain                    = "java.talorlik.com"
+acm_certificate_arn              = "arn:aws:acm:us-east-1:111111111111:certificate/00000000-0000-0000-0000-000000000000"
+
+vpc_cidr                         = "10.40.0.0/16"
+az_count                         = 2
+
+instance_type                    = "t3.small"
+asg_min_size                     = 2
+asg_desired_capacity             = 2
+asg_max_size                     = 6
+ubuntu_lts_codename              = "noble"
+
+rds_instance_class               = "db.t3.medium"
+rds_allocated_storage_gb         = 50
+rds_max_allocated_storage_gb     = 200
+rds_engine_version               = "8.0"
+db_name                          = "javaapp"
+db_app_username                  = "appuser"
+
+ses_sender_subdomain             = "java.talorlik.com"
+ses_from_address                 = "no-reply@java.talorlik.com"
+
+alarm_email                      = ""
+log_retention_days               = 30
+enable_waf                       = true

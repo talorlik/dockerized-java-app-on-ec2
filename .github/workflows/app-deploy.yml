@@ -1,0 +1,128 @@
+name: app-deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/app-deploy.yml"
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Override image tag (defaults to commit SHA)"
+        required: false
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: app-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-test:
+    name: build + test (gate)
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  deploy:
+    name: build, push, refresh
+    needs: build-test
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEPLOYMENT_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: gha-app-deploy
+
+      - id: tag
+        run: |
+          TAG="${{ github.event.inputs.image_tag }}"
+          if [ -z "$TAG" ]; then TAG="sha-${GITHUB_SHA::12}"; fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+
+      - name: Resolve ECR repo URLs
+        id: repos
+        run: |
+          ACC="${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
+          REG="${{ vars.AWS_REGION }}"
+          echo "backend=$ACC.dkr.ecr.$REG.amazonaws.com/java-app/backend"   >> $GITHUB_OUTPUT
+          echo "frontend=$ACC.dkr.ecr.$REG.amazonaws.com/java-app/frontend" >> $GITHUB_OUTPUT
+
+      - name: Build + push backend
+        run: |
+          docker build -t ${{ steps.repos.outputs.backend }}:${{ steps.tag.outputs.tag }} app/backend
+          docker push ${{ steps.repos.outputs.backend }}:${{ steps.tag.outputs.tag }}
+
+      - name: Build + push frontend
+        run: |
+          docker build -t ${{ steps.repos.outputs.frontend }}:${{ steps.tag.outputs.tag }} app/frontend
+          docker push ${{ steps.repos.outputs.frontend }}:${{ steps.tag.outputs.tag }}
+
+      - name: Update SSM release params
+        run: |
+          aws ssm put-parameter --name "/java-app/prod/backend-image-tag"  --type String --overwrite --value "${{ steps.tag.outputs.tag }}"
+          aws ssm put-parameter --name "/java-app/prod/frontend-image-tag" --type String --overwrite --value "${{ steps.tag.outputs.tag }}"
+          aws ssm put-parameter --name "/java-app/prod/release-id"         --type String --overwrite --value "${{ github.sha }}"
+
+      - name: Resolve ASG name
+        id: asg
+        run: |
+          NAME=$(aws autoscaling describe-auto-scaling-groups \
+            --query "AutoScalingGroups[?Tags[?Key=='Project' && Value=='java-app'] && Tags[?Key=='Environment' && Value=='prod']].AutoScalingGroupName | [0]" \
+            --output text)
+          if [ "$NAME" = "None" ] || [ -z "$NAME" ]; then
+            # Fallback to deterministic name pattern
+            NAME="java-app-prod-asg"
+          fi
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+
+      - name: Trigger ASG instance refresh
+        id: refresh
+        run: |
+          REFRESH_ID=$(aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name "${{ steps.asg.outputs.name }}" \
+            --preferences '{"MinHealthyPercentage":100,"MaxHealthyPercentage":200,"InstanceWarmup":180,"AutoRollback":true}' \
+            --query 'InstanceRefreshId' --output text)
+          echo "id=$REFRESH_ID" >> $GITHUB_OUTPUT
+
+      - name: Wait for refresh to complete
+        run: |
+          set -e
+          for i in $(seq 1 90); do
+            S=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name "${{ steps.asg.outputs.name }}" \
+              --instance-refresh-ids "${{ steps.refresh.outputs.id }}" \
+              --query 'InstanceRefreshes[0].Status' --output text)
+            P=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name "${{ steps.asg.outputs.name }}" \
+              --instance-refresh-ids "${{ steps.refresh.outputs.id }}" \
+              --query 'InstanceRefreshes[0].PercentageComplete' --output text)
+            echo "refresh status=$S percent=$P"
+            case "$S" in
+              Successful) exit 0 ;;
+              Failed|Cancelled|RollbackFailed|RollbackSuccessful)
+                echo "refresh ended with $S"; exit 1 ;;
+            esac
+            sleep 20
+          done
+          echo "timed out waiting for refresh"
+          exit 1
+
+      - name: Post-deploy smoke
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS --max-time 10 "https://java.talorlik.com:8443/actuator/health" | grep -q '"status":"UP"'; then
+              echo "smoke ok"; exit 0
+            fi
+            sleep 10
+          done
+          echo "smoke failed"; exit 1

@@ -1,0 +1,74 @@
+name: infra-apply
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - ".github/workflows/infra-apply.yml"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: infra-apply
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEPLOYMENT_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: gha-infra-apply
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: init
+        working-directory: infra/envs/prod
+        run: |
+          terraform init \
+            -backend-config="bucket=java-app-tfstate-${{ vars.DEPLOYMENT_ACCOUNT_ID }}-${{ vars.AWS_REGION }}" \
+            -backend-config="region=${{ vars.AWS_REGION }}"
+
+      - name: plan
+        working-directory: infra/envs/prod
+        env:
+          TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+          TF_VAR_deployment_account_id: ${{ vars.DEPLOYMENT_ACCOUNT_ID }}
+          TF_VAR_domain_account_id: ${{ vars.DOMAIN_ACCOUNT_ID }}
+          TF_VAR_domain_account_route53_role_arn: ${{ secrets.DOMAIN_ROUTE53_ROLE_ARN }}
+          TF_VAR_hosted_zone_id: ${{ vars.HOSTED_ZONE_ID }}
+          TF_VAR_acm_certificate_arn: ${{ secrets.ACM_CERTIFICATE_ARN }}
+        run: terraform plan -input=false -out=tfplan
+
+      - name: apply
+        working-directory: infra/envs/prod
+        run: terraform apply -input=false -auto-approve tfplan
+
+      - name: outputs
+        working-directory: infra/envs/prod
+        run: terraform output -no-color
+
+      - name: Upload compose file to S3 (compose-object pointer)
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          BUCKET="java-app-prod-config-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
+          # Best-effort - bucket may already exist from a prior run.
+          aws s3api create-bucket --bucket "$BUCKET" --region "$AWS_REGION" 2>/dev/null || true
+          aws s3api put-public-access-block --bucket "$BUCKET" \
+            --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+          aws s3 cp app/docker/docker-compose.prod.yml "s3://$BUCKET/docker-compose.prod.yml"
+          aws ssm put-parameter --name "/java-app/prod/compose-object" \
+            --type String --overwrite \
+            --value "s3://$BUCKET/docker-compose.prod.yml"

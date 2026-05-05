@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:tc:mysql:8.0:///javaapp_test
+    username: test
+    password: test
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+app:
+  ses:
+    enabled: false
+  jwt:
+    expiration-minutes: 60

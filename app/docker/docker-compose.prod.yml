@@ -1,0 +1,44 @@
+###############################################################################
+# Production compose file.
+#
+# - DB is external (RDS) - no mysql service here.
+# - Image references come from /opt/java-app/.env, written by EC2 user data.
+# - Backend reads runtime secrets from Secrets Manager via the instance role.
+#
+# This file is uploaded by CI to the S3 location pointed at by the
+# /java-app/prod/compose-object SSM parameter, and pulled by EC2 user-data.
+###############################################################################
+
+services:
+  backend:
+    image: "${BACKEND_IMAGE}"
+    restart: unless-stopped
+    env_file:
+      - /opt/java-app/.env
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  frontend:
+    image: "${FRONTEND_IMAGE}"
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

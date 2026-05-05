@@ -1,0 +1,18 @@
+{
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "_26d4e53229dca021d35c9dd8b65f3a4d.java.talorlik.com.",
+        "Type": "CNAME",
+        "TTL": 300,
+        "ResourceRecords": [
+          {
+            "Value": "_e3bdbb02e163b32d13900c6678f09f0f.jkddzztszm.acm-validations.aws."
+          }
+        ]
+      }
+    }
+  ]
+}
+

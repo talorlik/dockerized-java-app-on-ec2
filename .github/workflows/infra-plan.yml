@@ -1,0 +1,81 @@
+name: infra-plan
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+      - ".github/workflows/infra-plan.yml"
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: infra-plan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEPLOYMENT_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: gha-infra-plan
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: terraform init
+        working-directory: infra/envs/prod
+        run: |
+          terraform init \
+            -backend-config="bucket=java-app-tfstate-${{ vars.DEPLOYMENT_ACCOUNT_ID }}-${{ vars.AWS_REGION }}" \
+            -backend-config="region=${{ vars.AWS_REGION }}"
+
+      - name: terraform fmt
+        working-directory: infra/envs/prod
+        run: terraform fmt -check
+
+      - name: terraform validate
+        working-directory: infra/envs/prod
+        run: terraform validate
+
+      - name: terraform plan
+        working-directory: infra/envs/prod
+        env:
+          TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+          TF_VAR_deployment_account_id: ${{ vars.DEPLOYMENT_ACCOUNT_ID }}
+          TF_VAR_domain_account_id: ${{ vars.DOMAIN_ACCOUNT_ID }}
+          TF_VAR_domain_account_route53_role_arn: ${{ secrets.DOMAIN_ROUTE53_ROLE_ARN }}
+          TF_VAR_hosted_zone_id: ${{ vars.HOSTED_ZONE_ID }}
+          TF_VAR_acm_certificate_arn: ${{ secrets.ACM_CERTIFICATE_ARN }}
+        run: |
+          terraform plan -no-color -input=false -out=tfplan
+          terraform show -no-color tfplan > plan.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: |
+            infra/envs/prod/tfplan
+            infra/envs/prod/plan.txt
+
+      - name: Summarize plan in PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('infra/envs/prod/plan.txt', 'utf8');
+            const trimmed = plan.length > 60000 ? plan.slice(0, 60000) + '\n... (truncated) ...' : plan;
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '### terraform plan\n\n```\n' + trimmed + '\n```'
+            });
