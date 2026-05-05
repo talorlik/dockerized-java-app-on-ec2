@@ -10,11 +10,58 @@
 # - SES sender config is a plain JSON struct of identity + region.
 ###############################################################################
 
-# CMK for application secrets
+# CMK for application secrets, SSM parameters, and CloudWatch log groups.
+# Policy must allow CloudWatch Logs service to use the key for the specific
+# log groups, otherwise CreateLogGroup fails with AccessDeniedException.
 resource "aws_kms_key" "app_secrets" {
-  description             = "App secrets and SSM parameters"
+  description             = "App secrets, SSM parameters, and log group encryption"
   deletion_window_in_days = 30
   enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableRootPermissions"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:${data.aws_partition.current.partition}:iam::${var.deployment_account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowCloudWatchLogsUseOfKey"
+        Effect    = "Allow"
+        Principal = { Service = "logs.${var.aws_region}.amazonaws.com" }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey",
+        ]
+        Resource = "*"
+        Condition = {
+          ArnLike = {
+            "kms:EncryptionContext:aws:logs:arn" = "arn:${data.aws_partition.current.partition}:logs:${var.aws_region}:${var.deployment_account_id}:log-group:/${var.project}/${var.environment}/*"
+          }
+        }
+      },
+      {
+        Sid       = "AllowSnsUseOfKey"
+        Effect    = "Allow"
+        Principal = { Service = "sns.amazonaws.com" }
+        Action    = ["kms:Decrypt", "kms:GenerateDataKey*"]
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowEventsToPublishToSnsViaKey"
+        Effect    = "Allow"
+        Principal = { Service = "events.amazonaws.com" }
+        Action    = ["kms:Decrypt", "kms:GenerateDataKey*"]
+        Resource  = "*"
+      }
+    ]
+  })
 }
 
 resource "aws_kms_alias" "app_secrets" {

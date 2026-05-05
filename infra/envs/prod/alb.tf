@@ -62,15 +62,26 @@ resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
   rule {
     id     = "expire"
     status = "Enabled"
+
+    # Empty filter = applies to all objects (required by aws provider 5.x).
+    filter {}
+
     expiration {
       days = 90
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
     }
   }
 }
 
 data "aws_iam_policy_document" "alb_logs" {
+  # Legacy regions (incl. us-east-1): writes come from the per-region ELB
+  # AWS-owned account. Source: AWS docs - "Enable access logs for your
+  # Application Load Balancer".
   statement {
-    sid       = "AllowELBPutObject"
+    sid       = "AllowELBAccountPutObject"
     effect    = "Allow"
     actions   = ["s3:PutObject"]
     resources = ["${aws_s3_bucket.alb_logs.arn}/AWSLogs/${var.deployment_account_id}/*"]
@@ -79,31 +90,31 @@ data "aws_iam_policy_document" "alb_logs" {
       identifiers = ["arn:${data.aws_partition.current.partition}:iam::${local.elb_log_account_id}:root"]
     }
   }
+
+  # Newer regions / future-proofing: writes come from the ELB log-delivery
+  # service principal. Harmless in legacy regions.
   statement {
-    sid       = "AllowDeliveryServicePut"
+    sid       = "AllowELBLogDeliveryServicePut"
     effect    = "Allow"
     actions   = ["s3:PutObject"]
     resources = ["${aws_s3_bucket.alb_logs.arn}/AWSLogs/${var.deployment_account_id}/*"]
     principals {
       type        = "Service"
-      identifiers = ["delivery.logs.amazonaws.com"]
-    }
-    condition {
-      test     = "StringEquals"
-      variable = "s3:x-amz-acl"
-      values   = ["bucket-owner-full-control"]
+      identifiers = ["logdelivery.elasticloadbalancing.amazonaws.com"]
     }
   }
+
   statement {
-    sid       = "AllowDeliveryServiceGetAcl"
+    sid       = "AllowELBLogDeliveryServiceGetAcl"
     effect    = "Allow"
     actions   = ["s3:GetBucketAcl"]
     resources = [aws_s3_bucket.alb_logs.arn]
     principals {
       type        = "Service"
-      identifiers = ["delivery.logs.amazonaws.com"]
+      identifiers = ["logdelivery.elasticloadbalancing.amazonaws.com"]
     }
   }
+
   statement {
     sid       = "DenyInsecureTransport"
     effect    = "Deny"
