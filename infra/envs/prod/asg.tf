@@ -159,4 +159,9 @@ module "asg" {
   ]
 
   tags = local.common_tags
+
+  depends_on = [
+    aws_iam_service_linked_role.autoscaling,
+    aws_iam_service_linked_role.elb,
+  ]
 }

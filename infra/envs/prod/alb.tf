@@ -158,7 +158,10 @@ module "alb" {
   access_logs = {
     bucket  = aws_s3_bucket.alb_logs.id
     enabled = true
-    prefix  = "alb"
+    # No prefix - keeps bucket-policy resource path simple as
+    # bucket-arn/AWSLogs/<account>/*. If you reintroduce a prefix here,
+    # you must add the same prefix to the s3:PutObject Resource list in
+    # data "aws_iam_policy_document" "alb_logs".
   }
 
   listeners = {
@@ -173,6 +176,9 @@ module "alb" {
       }
     }
   }
+
+  # Ensure the ELB SLR is in place before creating the ALB.
+  depends_on = [aws_iam_service_linked_role.elb]
 
   target_groups = {
     app = {

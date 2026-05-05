@@ -133,3 +133,49 @@ resource "aws_iam_instance_profile" "app" {
   name = "${local.name_prefix}-app-instance"
   role = aws_iam_role.app_instance.name
 }
+
+###############################################################################
+# AWS Service-Linked Roles
+#
+# EC2 Auto Scaling and Elastic Load Balancing both rely on account-scoped
+# SLRs. AWS auto-creates them on first use, but the first-use creation can
+# race against ASG capacity validation, producing
+# "Access denied when attempting to assume role
+#  .../AWSServiceRoleForAutoScaling" errors.
+#
+# Managing them in Terraform with import blocks makes the dependency explicit
+# and idempotent across both fresh accounts and accounts where the SLRs
+# already exist (Terraform 1.5+ import blocks).
+###############################################################################
+
+resource "aws_iam_service_linked_role" "autoscaling" {
+  aws_service_name = "autoscaling.amazonaws.com"
+  description      = "Default SLR for EC2 Auto Scaling"
+  lifecycle {
+    # Description is AWS-managed; ignore drift so Terraform never tries to
+    # rewrite it.
+    ignore_changes = [description]
+  }
+}
+
+resource "aws_iam_service_linked_role" "elb" {
+  aws_service_name = "elasticloadbalancing.amazonaws.com"
+  description      = "Default SLR for Elastic Load Balancing"
+  lifecycle {
+    ignore_changes = [description]
+  }
+}
+
+# If the SLRs already exist in the account, Terraform imports them on the
+# next plan/apply rather than failing with "service role name has been
+# taken". If the SLRs do NOT exist (brand-new account), comment out these
+# import blocks before applying - Terraform will then create them.
+import {
+  to = aws_iam_service_linked_role.autoscaling
+  id = "arn:${data.aws_partition.current.partition}:iam::${var.deployment_account_id}:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling"
+}
+
+import {
+  to = aws_iam_service_linked_role.elb
+  id = "arn:${data.aws_partition.current.partition}:iam::${var.deployment_account_id}:role/aws-service-role/elasticloadbalancing.amazonaws.com/AWSServiceRoleForElasticLoadBalancing"
+}
