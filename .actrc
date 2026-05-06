@@ -1,0 +1,37 @@
+# nektos/act default flags. Loaded automatically when `act` is invoked from
+# this repository's root. Real GitHub Actions runners ignore this file, so
+# settings here only affect local act runs.
+#
+# Override per-invocation by passing the same flag with a different value on
+# the command line.
+
+# Pin runner image to a known-good catthehacker variant for reproducibility.
+#
+# `full-22.04` (~18 GB) ships the same tool set as github-hosted ubuntu-22.04
+# runners, including a recent docker CLI. The slimmer `act-latest` image
+# (~2 GB) ships an older docker CLI that defaults to API version 1.32, which
+# OrbStack and Docker Engine 24+ reject when Testcontainers reaches the
+# host daemon through the bind-mounted socket ("client version 1.32 is too
+# old. Minimum supported API version is 1.40"). The full image avoids that
+# trip wire and matches the daemon api floor of github-hosted runners.
+# (unverified - confirm by running the backend job under act after first
+# pull; cold pull is large.)
+-P ubuntu-latest=catthehacker/ubuntu:full-22.04
+
+# Force amd64 so behavior matches GitHub-hosted ubuntu-latest. On Apple
+# Silicon hosts this runs through Rosetta in Docker Desktop / OrbStack /
+# Colima.
+--container-architecture linux/amd64
+
+# Emulated artifact server for actions/upload-artifact and download-artifact.
+# Without this flag, upload steps fail with
+#   ::error::Unable to get the ACTIONS_RUNTIME_TOKEN env variable
+# Path is on the host filesystem; act mounts it into the runner container.
+--artifact-server-path /tmp/act-artifacts
+
+# Local-only credentials and config files. All three paths are gitignored
+# (.github/env.local, .github/secrets.local, .github/vars.local). Populate
+# them yourself; templates live next to them as *.example if added later.
+--env-file .github/env.local
+--secret-file .github/secrets.local
+--var-file .github/vars.local

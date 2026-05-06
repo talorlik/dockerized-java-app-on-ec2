@@ -1,0 +1,127 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    ":semanticCommits",
+    ":dependencyDashboard"
+  ],
+  "timezone": "UTC",
+  "schedule": [
+    "before 06:00 on monday"
+  ],
+  "labels": [
+    "dependencies",
+    "renovate"
+  ],
+  "rangeStrategy": "pin",
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "rebaseWhen": "behind-base-branch",
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": [
+      "security"
+    ],
+    "schedule": [
+      "at any time"
+    ]
+  },
+  "packageRules": [
+    {
+      "description": "Pin all third-party GitHub Actions to a full commit SHA and keep the human-readable version in a trailing comment so reviewers can read it.",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "pinDigests": true
+    },
+    {
+      "description": "Group official actions/* updates into one PR; they release in lockstep often enough that one combined PR is less noise than N.",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchPackageNames": [
+        "/^actions//"
+      ],
+      "groupName": "actions monorepo"
+    },
+    {
+      "description": "Group AWS-published actions together for the same reason.",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchPackageNames": [
+        "/^aws-actions//"
+      ],
+      "groupName": "aws-actions"
+    },
+    {
+      "description": "Group Terraform AWS modules together. terraform-aws-modules/* releases churn frequently; one PR per cycle is enough.",
+      "matchManagers": [
+        "terraform"
+      ],
+      "matchPackageNames": [
+        "/^terraform-aws-modules//"
+      ],
+      "groupName": "terraform-aws-modules"
+    },
+    {
+      "description": "Defer minor/patch updates of the AWS SDK to a single weekly group; SDK ships near-daily and would otherwise dominate the PR queue.",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "/^software\\.amazon\\.awssdk:/"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "aws-sdk-java",
+      "schedule": [
+        "before 06:00 on monday"
+      ]
+    },
+    {
+      "description": "Spring Boot starters move together; group all org.springframework.boot:* coordinates.",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "/^org\\.springframework\\.boot:/"
+      ],
+      "groupName": "spring-boot"
+    },
+    {
+      "description": "Major Terraform/Spring Boot/AWS-SDK bumps need human review; do not auto-group with minors.",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "labels": [
+        "dependencies",
+        "renovate",
+        "major"
+      ]
+    },
+    {
+      "description": "Pin Docker base images by digest. Source-of-truth tags can be retagged; pinning by digest is the only way to get reproducible builds.",
+      "matchManagers": [
+        "dockerfile",
+        "docker-compose"
+      ],
+      "pinDigests": true
+    }
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": [
+      "before 06:00 on monday"
+    ]
+  },
+  "terraform": {
+    "enabled": true
+  },
+  "terragrunt": {
+    "enabled": true
+  }
+}

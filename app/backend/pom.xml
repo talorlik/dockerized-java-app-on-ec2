@@ -27,9 +27,47 @@
 
         <jjwt.version>0.12.6</jjwt.version>
         <aws.sdk.version>2.28.16</aws.sdk.version>
-        <testcontainers.version>1.20.4</testcontainers.version>
+        <!--
+            Testcontainers 1.21.x explicitly works with recent Docker Engine
+            API minimums (>= 1.40). 1.21.3 is the latest patch on the 1.21
+            line as of 2026-05; 2.0.x exists upstream but is a major-version
+            bump that requires a migration audit (deferred). Pinning 1.21.3
+            keeps us on a Docker-modern client without taking that hit.
+            (unverified - confirm against Maven Central before pinning if
+            the container coords change.)
+        -->
+        <testcontainers.version>1.21.3</testcontainers.version>
         <bucket4j.version>8.10.1</bucket4j.version>
+        <!--
+            docker-java pinned ahead of Spring Boot 3.5.0 BOM's older default.
+            Spring Boot's BOM ships a docker-java line that hardcodes Docker
+            REST path /v1.32/..., which modern daemons (28.x, 29.x) reject
+            with "client version 1.32 is too old. Minimum supported API
+            version is 1.40". 3.7.1 negotiates to the daemon's max API.
+            Required for Testcontainers IT to run on host-mounted sockets
+            (act) and on github-hosted ubuntu-latest equally.
+        -->
+        <docker-java.version>3.7.1</docker-java.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!--
+                Import docker-java BOM to align all com.github.docker-java:*
+                artifacts (api, core, transport-zerodep, etc.) on a single
+                version. Listed before the Spring Boot parent's effective
+                management because pom-imported BOMs in this dependencyManagement
+                block resolve before the parent's own.
+            -->
+            <dependency>
+                <groupId>com.github.docker-java</groupId>
+                <artifactId>docker-java-bom</artifactId>
+                <version>${docker-java.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <!-- Web + validation -->
