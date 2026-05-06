@@ -1,11 +1,6 @@
 name: app-deploy
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "app/**"
-      - ".github/workflows/app-deploy.yml"
   workflow_dispatch:
     inputs:
       image_tag:

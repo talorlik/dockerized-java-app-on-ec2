@@ -85,9 +85,17 @@ module "rds" {
   backup_window                    = "03:00-04:00"
   maintenance_window               = "Sun:04:30-Sun:05:30"
   deletion_protection              = var.rds_deletion_protection
-  delete_automated_backups         = false
+  delete_automated_backups         = var.rds_delete_automated_backups
   skip_final_snapshot              = var.rds_skip_final_snapshot
   final_snapshot_identifier_prefix = "${local.name_prefix}-mysql-final"
+
+  # Use the AWS-managed default option group. Custom option groups are the
+  # only kind that can wedge a destroy via retained snapshots/backups; we
+  # have no MySQL options to set (everything tunable for our workload lives
+  # in aws_db_parameter_group.mysql), so the default OG is sufficient and
+  # cannot be lockup-blocked.
+  create_db_option_group = false
+  option_group_name      = "default:mysql-8-0"
 
   performance_insights_enabled          = true
   performance_insights_retention_period = 7

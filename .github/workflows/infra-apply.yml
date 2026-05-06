@@ -1,11 +1,6 @@
 name: infra-apply
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "infra/**"
-      - ".github/workflows/infra-apply.yml"
   workflow_dispatch:
 
 permissions:

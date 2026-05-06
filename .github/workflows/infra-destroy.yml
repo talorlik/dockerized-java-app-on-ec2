@@ -199,13 +199,15 @@ jobs:
             fi
           done
 
-      # Disable RDS deletion protection imperatively and wait for the
-      # instance to reach `available` so any in-flight modify completes
-      # before TF calls DeleteDBInstance.
+      # Disable RDS deletion protection imperatively, let any in-flight
+      # modify settle, and purge orphan retained automated backups left
+      # from prior failed destroys (those pin the parameter group's KMS
+      # key and bloat backup quota).
       - name: Prepare RDS for destroy
         run: |
           set -euo pipefail
           DBI="java-app-prod-mysql"
+
           if aws rds describe-db-instances --db-instance-identifier "$DBI" >/dev/null 2>&1; then
             aws rds modify-db-instance \
               --db-instance-identifier "$DBI" \
@@ -215,8 +217,19 @@ jobs:
             aws rds wait db-instance-available \
               --db-instance-identifier "$DBI" || true
           else
-            echo "RDS instance $DBI not present, skipping"
+            echo "RDS instance $DBI not present"
           fi
+
+          # Purge any retained automated backups for this DBI. delete_automated_backups
+          # only fires inside DeleteDBInstance; orphans from earlier runs need this.
+          aws rds describe-db-instance-automated-backups \
+            --query "DBInstanceAutomatedBackups[?DBInstanceIdentifier=='$DBI'].DBInstanceAutomatedBackupsArn" \
+            --output text | tr '\t' '\n' | while read -r ARN; do
+              [ -z "$ARN" ] && continue
+              echo "deleting orphan automated backup $ARN"
+              aws rds delete-db-instance-automated-backup \
+                --db-instance-automated-backups-arn "$ARN" || true
+            done
 
       - name: terraform destroy
         working-directory: infra/envs/prod
@@ -229,6 +242,7 @@ jobs:
           TF_VAR_acm_certificate_arn: ${{ secrets.ACM_CERTIFICATE_ARN }}
           TF_VAR_rds_deletion_protection: "false"
           TF_VAR_rds_skip_final_snapshot: "true"
+          TF_VAR_rds_delete_automated_backups: "true"
           TF_VAR_alb_logs_force_destroy: "true"
         run: |
           terraform destroy -input=false -auto-approve

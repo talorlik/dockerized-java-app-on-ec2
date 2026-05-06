@@ -234,3 +234,9 @@ variable "alb_logs_force_destroy" {
   type        = bool
   default     = false
 }
+
+variable "rds_delete_automated_backups" {
+  description = "Delete retained automated backups when the instance is destroyed. Override to true at destroy time."
+  type        = bool
+  default     = false
+}

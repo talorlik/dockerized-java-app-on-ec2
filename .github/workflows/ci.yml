@@ -1,12 +1,7 @@
 name: ci
 
 on:
-  pull_request:
-  push:
-    branches:
-      - "feature/**"
-      - "fix/**"
-      - "chore/**"
+  workflow_dispatch:
   # Allow other workflows (e.g. app-deploy) to use this as a quality gate.
   workflow_call:
 

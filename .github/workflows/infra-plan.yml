@@ -1,15 +1,11 @@
 name: infra-plan
 
 on:
-  pull_request:
-    paths:
-      - "infra/**"
-      - ".github/workflows/infra-plan.yml"
+  workflow_dispatch:
 
 permissions:
   id-token: write
   contents: read
-  pull-requests: write
 
 concurrency:
   group: infra-plan-${{ github.ref }}
@@ -66,16 +62,13 @@ jobs:
             infra/envs/prod/tfplan
             infra/envs/prod/plan.txt
 
-      - name: Summarize plan in PR
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const plan = fs.readFileSync('infra/envs/prod/plan.txt', 'utf8');
-            const trimmed = plan.length > 60000 ? plan.slice(0, 60000) + '\n... (truncated) ...' : plan;
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '### terraform plan\n\n```\n' + trimmed + '\n```'
-            });
+      - name: Surface plan in job summary
+        run: |
+          {
+            echo "### terraform plan"
+            echo ""
+            echo '```'
+            head -c 60000 infra/envs/prod/plan.txt
+            echo ""
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
