@@ -3,7 +3,9 @@
 ## Logs
 
 - App + Docker + Nginx + cloud-init: CloudWatch log group `/java-app/prod/app`.
-- VPC flow logs: `flow_log_cloudwatch_log_group` created by the VPC module.
+- VPC flow logs: CloudWatch log group `/aws/vpc-flow-log/<vpc-id>`,
+  created by the VPC module (prefix `/aws/vpc-flow-log/`, suffix is the
+  VPC ID).
 - ALB access logs: `s3://java-app-prod-alb-logs-<account>/AWSLogs/<account>/...`.
 - RDS error/general/slowquery: exported to CloudWatch by RDS.
 

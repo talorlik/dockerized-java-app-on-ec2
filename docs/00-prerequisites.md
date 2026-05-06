@@ -30,7 +30,7 @@
 | Docker     | 24+             | Compose v2 plugin                      |
 | Java JDK   | 21              | Temurin recommended                    |
 | Maven      | 3.9+            | Used by backend build                  |
-| Node       | 20+             | Used by Playwright E2E                 |
+| Node       | 22+ (CI uses 24)| Used by Playwright E2E                 |
 | `jq`       | any             | Convenience parsing                    |
 
 ## GitHub
@@ -39,4 +39,7 @@
 - Repo variables: `AWS_REGION`, `DEPLOYMENT_ACCOUNT_ID`, `DOMAIN_ACCOUNT_ID`,
   `HOSTED_ZONE_ID`.
 - Repo secrets: `ACM_CERTIFICATE_ARN`, `DEPLOYMENT_ROLE_ARN`,
-  `DOMAIN_ROUTE53_ROLE_ARN`, `GH_TOKEN`.
+  `DOMAIN_ROUTE53_ROLE_ARN`.
+- GitHub Environment named `prod` (referenced by `infra-apply.yml`,
+  `app-deploy.yml`, `infra-destroy.yml`, `app-destroy.yml`). Attach a
+  required-reviewer protection rule to gate apply/destroy runs.
