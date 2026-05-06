@@ -164,6 +164,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "tfstate" {
     id     = "expire-noncurrent"
     status = "Enabled"
 
+    # Empty filter applies the rule to every object in the bucket. Required by
+    # AWS provider v5 SDKv2 schema (one of `filter` or `prefix` is mandatory).
+    filter {}
+
     noncurrent_version_expiration {
       noncurrent_days = 90
     }

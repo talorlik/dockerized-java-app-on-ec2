@@ -27,7 +27,14 @@ jobs:
 
       - name: Backend unit + integration tests (Testcontainers MySQL)
         working-directory: app/backend
-        run: mvn -B -ntp verify
+        # ./mvnw resolves Maven 3.9.9 from .mvn/wrapper/maven-wrapper.properties.
+        # Works on github-hosted runners and on nektos/act images that lack
+        # a system mvn. The chmod is defensive: if git failed to preserve the
+        # +x bit (Windows clones with core.fileMode=false, archive downloads,
+        # certain fs imports), the wrapper still runs. No-op when already +x.
+        run: |
+          chmod +x ./mvnw
+          ./mvnw -B -ntp verify
 
       - name: Upload surefire reports
         if: always()

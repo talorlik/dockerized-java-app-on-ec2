@@ -1,0 +1,122 @@
+#!/bin/sh
+# ----------------------------------------------------------------------------
+# Apache Maven Wrapper, script-only mode (no jar checked in).
+#
+# Resolves the Maven distribution declared in
+# .mvn/wrapper/maven-wrapper.properties (distributionUrl +
+# distributionSha256Sum), caches it under
+# ${MAVEN_USER_HOME:-$HOME/.m2}/wrapper/dists/<basename>/<urlhash>/, and
+# execs the cached mvn with all forwarded arguments.
+#
+# Behavior is intentionally close to the official Apache Maven Wrapper
+# (https://maven.apache.org/wrapper/) so existing CI and IDE integrations
+# work unchanged.
+# ----------------------------------------------------------------------------
+
+set -euf
+
+# ---- helpers ---------------------------------------------------------------
+die() { printf 'mvnw: %s\n' "$*" >&2; exit 1; }
+
+# Resolve a sha256 of stdin, preferring shasum (BSD/macOS), falling back to
+# sha256sum (GNU/Linux). Either is universally available on the platforms
+# this wrapper targets.
+sha256_stdin() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum | awk '{print $1}'
+  else
+    die "neither shasum nor sha256sum is available on PATH"
+  fi
+}
+
+sha256_file() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    die "neither shasum nor sha256sum is available on PATH"
+  fi
+}
+
+# ---- resolve project basedir (handle symlinks) -----------------------------
+PRG="$0"
+while [ -h "$PRG" ]; do
+  ls=$(ls -ld "$PRG")
+  link=$(expr "$ls" : '.*-> \(.*\)$' || true)
+  if expr "$link" : '/.*' >/dev/null; then
+    PRG="$link"
+  else
+    PRG="$(dirname "$PRG")/$link"
+  fi
+done
+PROJECT_BASEDIR=$(cd "$(dirname "$PRG")" >/dev/null 2>&1 && pwd)
+export MAVEN_PROJECTBASEDIR="$PROJECT_BASEDIR"
+
+# ---- read wrapper properties ----------------------------------------------
+WRAPPER_PROPS="$PROJECT_BASEDIR/.mvn/wrapper/maven-wrapper.properties"
+[ -f "$WRAPPER_PROPS" ] || die "missing $WRAPPER_PROPS"
+
+# Strip CRs so the wrapper tolerates Windows-edited properties files.
+distUrl=$(awk -F= '/^distributionUrl=/{ sub(/\r$/,""); print substr($0, index($0, "=")+1) }' "$WRAPPER_PROPS")
+distSha=$(awk -F= '/^distributionSha256Sum=/{ sub(/\r$/,""); print substr($0, index($0, "=")+1) }' "$WRAPPER_PROPS")
+[ -n "${distUrl:-}" ] || die "distributionUrl is empty in $WRAPPER_PROPS"
+
+# Allow MVNW_REPOURL to override the distributionUrl host (mirror support).
+if [ -n "${MVNW_REPOURL:-}" ]; then
+  distUrl=$(printf '%s' "$distUrl" | awk -v repo="$MVNW_REPOURL" '{ sub(/^https?:\/\/[^\/]+/, repo); print }')
+fi
+
+distArchive=$(basename "$distUrl")
+case "$distArchive" in
+  *-bin.zip) distName=${distArchive%-bin.zip} ;;
+  *) die "unsupported distribution archive name: $distArchive" ;;
+esac
+
+# Per-URL hash so a re-pinned distribution gets a fresh cache directory.
+distUrlHash=$(printf '%s' "$distUrl" | sha256_stdin)
+
+WRAPPER_HOME="${MAVEN_USER_HOME:-$HOME/.m2}/wrapper/dists"
+DIST_PARENT="$WRAPPER_HOME/$distName/$distUrlHash"
+MVN_HOME="$DIST_PARENT/$distName"
+
+# ---- download + verify + extract on cache miss -----------------------------
+if [ ! -x "$MVN_HOME/bin/mvn" ]; then
+  mkdir -p "$DIST_PARENT"
+  archive="$DIST_PARENT/$distArchive"
+
+  if [ ! -f "$archive" ]; then
+    printf 'mvnw: downloading %s ...\n' "$distUrl" >&2
+    if command -v curl >/dev/null 2>&1; then
+      curl -fsSL --retry 3 -o "$archive.part" "$distUrl"
+    elif command -v wget >/dev/null 2>&1; then
+      wget -q -O "$archive.part" "$distUrl"
+    else
+      die "neither curl nor wget is available on PATH"
+    fi
+    mv "$archive.part" "$archive"
+  fi
+
+  if [ -n "${distSha:-}" ]; then
+    actualSha=$(sha256_file "$archive")
+    if [ "$actualSha" != "$distSha" ]; then
+      rm -f "$archive"
+      die "checksum mismatch on $archive (expected $distSha got $actualSha)"
+    fi
+  fi
+
+  if command -v unzip >/dev/null 2>&1; then
+    (cd "$DIST_PARENT" && unzip -q "$distArchive")
+  elif command -v jar >/dev/null 2>&1; then
+    (cd "$DIST_PARENT" && jar xf "$distArchive")
+  else
+    die "neither unzip nor jar is available on PATH"
+  fi
+  rm -f "$archive"
+fi
+
+[ -x "$MVN_HOME/bin/mvn" ] || die "Maven not found at $MVN_HOME/bin/mvn after extraction"
+
+exec "$MVN_HOME/bin/mvn" "$@"

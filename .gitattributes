@@ -8,3 +8,8 @@
 *.jar binary
 *.zip binary
 *.gz binary
+
+# Maven Wrapper: mvnw must stay LF and executable; mvnw.cmd must stay CRLF.
+mvnw          text eol=lf
+mvnw.cmd      text eol=crlf
+.mvn/wrapper/maven-wrapper.properties text eol=lf
