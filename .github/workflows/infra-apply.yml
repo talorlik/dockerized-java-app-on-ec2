@@ -2,6 +2,16 @@ name: infra-apply
 
 on:
   workflow_dispatch:
+    inputs:
+      purge_pending_secrets:
+        description: >
+          Force-delete any Secrets Manager secrets at the project's well-known
+          paths that are currently in PendingDeletion state. Use only when a
+          re-apply after `terraform destroy` is blocked by the 7-day recovery
+          window. Safe to enable: skips healthy secrets.
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   id-token: write
@@ -27,6 +37,15 @@ jobs:
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.9.8
+
+      # Opt-in: purge any project secrets stuck in PendingDeletion. Runs only
+      # when the workflow is dispatched with `purge_pending_secrets=true`.
+      # See .github/scripts/purge_pending_secrets.sh for the rationale.
+      - name: Purge pending-deletion secrets (opt-in)
+        if: ${{ inputs.purge_pending_secrets == 'true' }}
+        run: |
+          chmod +x .github/scripts/purge_pending_secrets.sh
+          .github/scripts/purge_pending_secrets.sh
 
       # Pre-create AWS Service-Linked Roles before Terraform runs.
       # SLRs are account-wide singletons that Terraform does not manage; the

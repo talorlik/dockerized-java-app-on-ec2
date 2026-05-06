@@ -82,3 +82,11 @@ The bootstrap state stack (S3 state bucket + KMS CMK in
 `infra/bootstrap`) is intentionally left intact so the next
 `infra-apply.yml` can rehydrate the env without re-bootstrapping. To
 remove it as well, see the manual procedure in the root `README.md`.
+
+After a tear-down, the four app secrets
+(`/java-app/prod/db/app-user`, `/java-app/prod/admin`, `/java-app/prod/jwt`,
+`/java-app/prod/ses`) remain in `PendingDeletion` for 7 days. A re-apply
+within that window must dispatch `infra-apply.yml` with
+`purge_pending_secrets=true`. See `04-operations.md` ->
+"Re-apply after a destroy (pending-deletion secrets)" for the full
+procedure.
