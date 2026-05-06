@@ -38,6 +38,8 @@ The content is organized as follows:
 # Directory Structure
 ```
 .github/
+  scripts/
+    purge_pending_secrets.sh
   workflows/
     app-deploy.yml
     app-destroy.yml
@@ -135,6 +137,10 @@ app/
     Dockerfile
     nginx.conf
 docs/
+  auxiliary/
+    architecture-diagrams/
+      generated-python.py
+      requirements.txt
   dark-theme.css
   index.html
   light-theme.css
@@ -183,1068 +189,51 @@ repomix.config.json
 
 # Files
 
-## File: docs/dark-theme.css
-````css
-  1: * {
-  2:   margin: 0;
-  3:   padding: 0;
-  4:   box-sizing: border-box;
-  5: }
-  6: :root {
-  7:   --primary-color: #58a6ff;
-  8:   --primary-hover: #79c0ff;
-  9:   --bg-color: #0d1117;
- 10:   --text-color: #c9d1d9;
- 11:   --border-color: #30363d;
- 12:   --code-bg: #161b22;
- 13:   --nav-bg: #161b22;
- 14:   --nav-shadow: rgba(0, 0, 0, 0.5);
- 15:   --section-bg: #161b22;
- 16:   --table-row-alt: #21262d;
- 17:   --link-color: #58a6ff;
- 18: }
- 19: html {
- 20:   scroll-behavior: smooth;
- 21: }
- 22: body {
- 23:   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
- 24:   line-height: 1.6;
- 25:   color: var(--text-color);
- 26:   background-color: var(--bg-color);
- 27:   padding-top: 80px;
- 28: }
- 29: .skip-link {
- 30:   position: absolute;
- 31:   left: -9999px;
- 32:   z-index: 9999;
- 33:   padding: 0.75rem 1rem;
- 34:   background: var(--primary-color);
- 35:   color: #fff;
- 36:   text-decoration: none;
- 37:   font-weight: 600;
- 38: }
- 39: .skip-link:focus {
- 40:   left: 0;
- 41:   top: 0;
- 42:   position: fixed;
- 43: }
- 44: .navbar {
- 45:   position: fixed;
- 46:   top: 0;
- 47:   left: 0;
- 48:   right: 0;
- 49:   background-color: var(--nav-bg);
- 50:   border-bottom: 1px solid var(--border-color);
- 51:   box-shadow: 0 2px 4px var(--nav-shadow);
- 52:   z-index: 1000;
- 53:   padding: 5px 20px;
- 54: }
- 55: .nav-container {
- 56:   max-width: 1200px;
- 57:   margin: 0 auto;
- 58:   display: flex;
- 59:   justify-content: space-between;
- 60:   align-items: center;
- 61: }
- 62: .nav-logo {
- 63:   font-size: 18px;
- 64:   font-weight: 600;
- 65:   color: var(--text-color);
- 66:   text-decoration: none;
- 67:   margin-right: 20px;
- 68:   white-space: nowrap;
- 69: }
- 70: .nav-menu {
- 71:   display: flex;
- 72:   list-style: none;
- 73:   gap: 10px;
- 74:   align-items: center;
- 75: }
- 76: .nav-menu li {
- 77:   display: flex;
- 78:   align-items: center;
- 79:   padding: 10px 12px;
- 80: }
- 81: .nav-menu a {
- 82:   color: var(--text-color);
- 83:   text-decoration: none;
- 84:   font-size: 14px;
- 85:   border-bottom: 2px solid transparent;
- 86: }
- 87: .nav-menu a:hover,
- 88: .nav-menu a.active {
- 89:   color: var(--primary-color);
- 90:   border-bottom-color: var(--primary-color);
- 91: }
- 92: .mobile-menu-toggle {
- 93:   display: none;
- 94:   background: none;
- 95:   border: none;
- 96:   font-size: 24px;
- 97:   cursor: pointer;
- 98:   padding: 10px;
- 99:   color: var(--text-color);
-100: }
-101: .theme-toggle {
-102:   background: none;
-103:   border: 1px solid var(--border-color);
-104:   border-radius: 6px;
-105:   color: var(--text-color);
-106:   cursor: pointer;
-107:   font-size: 20px;
-108:   padding: 4px 10px;
-109:   margin-left: 10px;
-110: }
-111: .theme-toggle .icon.hidden {
-112:   display: none;
-113: }
-114: .hero {
-115:   color: var(--text-color);
-116:   padding: 60px 20px 0 20px;
-117:   text-align: center;
-118: }
-119: .hero-content {
-120:   max-width: 1200px;
-121:   margin: 0 auto;
-122: }
-123: .hero h1 {
-124:   font-size: 2.5em;
-125:   margin-bottom: 20px;
-126:   font-weight: 600;
-127: }
-128: .hero p {
-129:   font-size: 1.2em;
-130:   margin-bottom: 30px;
-131: }
-132: .hero-banner {
-133:   max-width: 100%;
-134:   height: auto;
-135:   margin-top: 30px;
-136:   border-radius: 8px;
-137:   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
-138:   filter: brightness(0.9);
-139: }
-140: section {
-141:   max-width: 1200px;
-142:   margin: 0 auto;
-143:   padding: 40px 20px 0 20px;
-144:   scroll-margin-top: 100px;
-145: }
-146: section h2 {
-147:   font-size: 2em;
-148:   margin-bottom: 20px;
-149:   padding-bottom: 10px;
-150:   border-bottom: 2px solid var(--border-color);
-151: }
-152: section h3 {
-153:   font-size: 1.5em;
-154:   margin-bottom: 15px;
-155: }
-156: .card {
-157:   background: var(--section-bg);
-158:   border: 1px solid var(--border-color);
-159:   border-radius: 6px;
-160:   padding: 20px;
-161:   margin-bottom: 20px;
-162:   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-163: }
-164: .doc-grid {
-165:   display: grid;
-166:   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-167:   gap: 20px;
-168:   margin-top: 20px;
-169: }
-170: ul, ol {
-171:   list-style-position: inside;
-172: }
-173: a {
-174:   color: var(--link-color);
-175:   text-decoration: none;
-176: }
-177: a:hover {
-178:   text-decoration: underline;
-179: }
-180: p {
-181:   margin-bottom: 15px;
-182: }
-183: code {
-184:   background-color: var(--code-bg);
-185:   padding: 2px 6px;
-186:   border-radius: 3px;
-187:   border: 1px solid var(--border-color);
-188:   color: #f85149;
-189: }
-190: pre {
-191:   background-color: var(--code-bg);
-192:   padding: 16px;
-193:   border-radius: 6px;
-194:   overflow-x: auto;
-195:   border: 1px solid var(--border-color);
-196: }
-197: pre code {
-198:   background: none;
-199:   padding: 0;
-200:   border: none;
-201:   color: var(--text-color);
-202: }
-203: footer {
-204:   background-color: var(--section-bg);
-205:   border-top: 1px solid var(--border-color);
-206:   padding: 30px 20px;
-207:   text-align: center;
-208:   color: #8b949e;
-209: }
-210: .scroll-to-top {
-211:   position: fixed;
-212:   bottom: 30px;
-213:   right: 30px;
-214:   width: 50px;
-215:   height: 50px;
-216:   border-radius: 50%;
-217:   background-color: rgba(88, 166, 255, 0.15);
-218:   border: 2px solid rgba(88, 166, 255, 0.3);
-219:   color: var(--primary-color);
-220:   cursor: pointer;
-221:   display: flex;
-222:   align-items: center;
-223:   justify-content: center;
-224:   z-index: 999;
-225:   opacity: 0;
-226:   visibility: hidden;
-227:   pointer-events: none;
-228:   transition: opacity 0.3s ease, visibility 0.3s ease;
-229: }
-230: .scroll-to-top.visible {
-231:   opacity: 1;
-232:   visibility: visible;
-233:   pointer-events: auto;
-234: }
-235: @media (max-width: 768px) {
-236:   .mobile-menu-toggle {
-237:     display: block;
-238:   }
-239:   .nav-menu {
-240:     position: fixed;
-241:     left: -100%;
-242:     top: 60px;
-243:     flex-direction: column;
-244:     background-color: var(--nav-bg);
-245:     width: 100%;
-246:     text-align: center;
-247:     transition: 0.3s;
-248:     padding: 20px 0;
-249:     border-bottom: 1px solid var(--border-color);
-250:   }
-251:   .nav-menu.active {
-252:     left: 0;
-253:   }
-254: }
-````
-
-## File: docs/index.html
-````html
-  1: <!DOCTYPE html>
-  2: <html lang="en">
-  3: <head>
-  4:   <meta charset="UTF-8">
-  5:   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  6:   <title>Dockerized Java App on EC2 - Documentation</title>
-  7:   <meta name="description" content="Project documentation for deploying Dockerized Java applications on AWS EC2, including architecture, deployment, operations, security, and ADRs.">
-  8:   <meta property="og:type" content="website">
-  9:   <meta property="og:title" content="Dockerized Java App on EC2 - Documentation">
- 10:   <meta property="og:description" content="Production-shaped Dockerized Java deployment reference with Terraform IaC and GitHub Actions CI/CD.">
- 11:   <meta property="og:image" content="https://github.com/talorlik/dockerized-java-app-on-ec2/raw/main/docs/header_banner.png">
- 12:   <meta name="twitter:card" content="summary_large_image">
- 13:   <meta name="twitter:title" content="Dockerized Java App on EC2 - Documentation">
- 14:   <meta name="twitter:description" content="Architecture, deployment, operations, and security documentation for the project.">
- 15:   <meta name="twitter:image" content="https://github.com/talorlik/dockerized-java-app-on-ec2/raw/main/docs/header_banner.png">
- 16:   <link rel="icon" type="image/x-icon" href="favicon.ico">
- 17:   <link id="theme-stylesheet" rel="stylesheet" href="light-theme.css">
- 18: </head>
- 19: <body>
- 20:   <a href="#main-content" class="skip-link">Skip to main content</a>
- 21:   <nav class="navbar">
- 22:     <div class="nav-container">
- 23:       <a href="#hero" class="nav-logo">Dockerized Java App Docs</a>
- 24:       <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle navigation menu">☰</button>
- 25:       <ul class="nav-menu" id="navMenu">
- 26:         <li><a href="#overview">Overview</a></li>
- 27:         <li><a href="#getting-started">Getting Started</a></li>
- 28:         <li><a href="#architecture">Architecture</a></li>
- 29:         <li><a href="#documentation">Documentation</a></li>
- 30:         <li><a href="#operations">Operations</a></li>
- 31:         <li><a href="#security">Security</a></li>
- 32:         <li><a href="#repository">Repository</a></li>
- 33:         <li>
- 34:           <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
- 35:             <span id="sunIcon" class="icon hidden">☀️</span>
- 36:             <span id="moonIcon" class="icon">🌙</span>
- 37:           </button>
- 38:         </li>
- 39:       </ul>
- 40:     </div>
- 41:   </nav>
- 42:   <main id="main-content">
- 43:     <section id="hero" class="hero">
- 44:       <h1>Dockerized Java App on EC2</h1>
- 45:       <p>
- 46:         Production-shaped reference implementation for deploying Dockerized Java
- 47:         applications on EC2 Auto Scaling behind an ALB, with RDS MySQL,
- 48:         Terraform infrastructure, and GitHub Actions delivery workflows. The
- 49:         signup app included here is a sample workload.
- 50:       </p>
- 51:       <img src="header_banner.png" alt="Dockerized Java app architecture banner" class="hero-banner">
- 52:     </section>
- 53:     <section id="overview">
- 54:       <h2>Overview</h2>
- 55:       <div class="doc-grid">
- 56:         <article class="card">
- 57:           <h3>What This Project Includes</h3>
- 58:           <ul>
- 59:             <li>Spring Boot backend with JWT auth, RBAC, and Flyway migrations</li>
- 60:             <li>Nginx frontend container proxying <code>/api/*</code> to backend</li>
- 61:             <li>Private RDS MySQL (central shared DB) with stateless EC2 compute</li>
- 62:             <li>Terraform-managed AWS foundation across deployment and domain accounts</li>
- 63:             <li>GitHub Actions OIDC delivery with ASG Instance Refresh rollout</li>
- 64:           </ul>
- 65:         </article>
- 66:         <article class="card">
- 67:           <h3>Target Runtime Topology</h3>
- 68:           <p>
- 69:             Ingress path: Internet -&gt; Route53 alias -&gt; ALB HTTPS listener -&gt;
- 70:             EC2 ASG private subnets -&gt; Docker Compose frontend/backend -&gt; RDS MySQL.
- 71:           </p>
- 72:           <p>
- 73:             Primary endpoint: <code>https://java.talorlik.com</code>.
- 74:             Operations and architecture details are aligned with
- 75:             <code>PROJECT_OVERVIEW.md</code>, PRD, and Technical Requirements docs.
- 76:           </p>
- 77:         </article>
- 78:       </div>
- 79:     </section>
- 80:     <section id="getting-started">
- 81:       <h2>Getting Started</h2>
- 82:       <div class="doc-grid">
- 83:         <article class="card">
- 84:           <h3>Prerequisites Checklist</h3>
- 85:           <ul>
- 86:             <li>DEPLOYMENT account for ALB, EC2/ASG, RDS, ECR, IAM, Secrets Manager, and ACM</li>
- 87:             <li>DOMAIN account (or same account) hosting Route53 zone for <code>talorlik.com</code></li>
- 88:             <li><code>DEPLOYMENT_ROLE_ARN</code> with GitHub OIDC trust configured</li>
- 89:             <li><code>DOMAIN_ROUTE53_ROLE_ARN</code> allowing DNS record updates (when cross-account)</li>
- 90:             <li>ACM certificate in DEPLOYMENT account for <code>java.talorlik.com</code></li>
- 91:             <li>GitHub variables: <code>AWS_REGION</code>, <code>DEPLOYMENT_ACCOUNT_ID</code>, <code>DOMAIN_ACCOUNT_ID</code>, <code>HOSTED_ZONE_ID</code></li>
- 92:             <li>GitHub secrets: <code>ACM_CERTIFICATE_ARN</code>, <code>DEPLOYMENT_ROLE_ARN</code>, <code>DOMAIN_ROUTE53_ROLE_ARN</code></li>
- 93:             <li>GitHub Environment named <code>prod</code> for apply/destroy workflows</li>
- 94:           </ul>
- 95:         </article>
- 96:         <article class="card">
- 97:           <h3>Deploy From Scratch</h3>
- 98:           <ol>
- 99:             <li>Complete one-time prerequisites from <code>README.md</code>: DEPLOYMENT account, DOMAIN account role chain, ACM cert, GitHub vars/secrets, and <code>prod</code> environment.</li>
-100:             <li>Bootstrap remote Terraform state in <code>infra/bootstrap</code> and copy the backend block output into <code>infra/envs/prod/backend.tf</code>.</li>
-101:             <li>Optionally run <code>infra-plan.yml</code>, then run <code>infra-apply.yml</code> to provision VPC, ALB, ASG, RDS, ECR, IAM, Route53, and observability resources.</li>
-102:             <li>Run <code>app-deploy.yml</code> to execute CI gates, push SHA-tagged images to ECR, update SSM release pointers, and trigger ASG instance refresh.</li>
-103:             <li>Retrieve first admin credentials from Secrets Manager and sign in.</li>
-104:           </ol>
-105:         </article>
-106:         <article class="card">
-107:           <h3>Deploy Commands</h3>
-108:           <pre><code># 1) Bootstrap state (local, one-shot)
-109: cd infra/bootstrap
-110: export AWS_REGION=us-east-1
-111: terraform init
-112: terraform apply -var aws_region=us-east-1 -var state_bucket_name="java-app-tfstate-&lt;DEPLOYMENT_ACCOUNT_ID&gt;-us-east-1"
-113: terraform output backend_block_example
-114: # 2) (Optional) Terraform plan workflow
-115: gh workflow run infra-plan.yml
-116: gh run watch
-117: # 3) Apply infrastructure
-118: gh workflow run infra-apply.yml
-119: gh run watch
-120: # 4) Deploy app images + refresh ASG
-121: gh workflow run app-deploy.yml
-122: gh run watch</code></pre>
-123:         </article>
-124:         <article class="card">
-125:           <h3>Destroy Stack (Reverse Order)</h3>
-126:           <p>
-127:             Destroy follows the README sequence. Both workflow-based destroy paths require
-128:             the exact confirmation value <code>DESTROY</code>.
-129:           </p>
-130:           <pre><code># 1) Tear down application layer
-131: gh workflow run app-destroy.yml -f confirm=DESTROY
-132: gh run watch
-133: # 2) Tear down production infrastructure
-134: gh workflow run infra-destroy.yml -f confirm=DESTROY -f run_app_cleanup=true
-135: gh run watch</code></pre>
-136:           <p>
-137:             Optional: remove <code>infra/bootstrap</code> resources only when decommissioning
-138:             the project completely.
-139:           </p>
-140:         </article>
-141:       </div>
-142:     </section>
-143:     <section id="architecture">
-144:       <h2>Architecture</h2>
-145:       <div class="card">
-146:         <p>
-147:           Route53 aliases <code>java.talorlik.com</code> to an internet-facing ALB.
-148:           The ALB forwards to EC2 instances in an Auto Scaling Group, where
-149:           frontend and backend containers run via Docker Compose. The backend
-150:           connects to private RDS MySQL, and secrets are sourced from AWS
-151:           Secrets Manager.
-152:         </p>
-153:       </div>
-154:       <div class="card">
-155:         <h3>Key Paths</h3>
-156:         <ul>
-157:           <li><code>app/backend/</code> - Spring Boot application</li>
-158:           <li><code>app/frontend/</code> - static frontend and Nginx config</li>
-159:           <li><code>app/docker/</code> - local and prod compose files</li>
-160:           <li><code>infra/envs/prod/</code> - production Terraform environment</li>
-161:           <li><code>.github/workflows/</code> - CI/CD pipelines</li>
-162:         </ul>
-163:       </div>
-164:     </section>
-165:     <section id="documentation">
-166:       <h2>Documentation</h2>
-167:       <div class="doc-grid">
-168:         <article class="card">
-169:           <h3>Operator Guides</h3>
-170:           <ul>
-171:             <li><a href="auxiliary/operations_guide/00-prerequisites.md">00 - Prerequisites</a></li>
-172:             <li><a href="auxiliary/operations_guide/01-bootstrap-state.md">01 - Bootstrap State</a></li>
-173:             <li><a href="auxiliary/operations_guide/02-domain-account-dns.md">02 - Domain Account DNS</a></li>
-174:             <li><a href="auxiliary/operations_guide/03-deployment.md">03 - Deployment</a></li>
-175:             <li><a href="auxiliary/operations_guide/04-operations.md">04 - Operations</a></li>
-176:             <li><a href="auxiliary/operations_guide/05-security-model.md">05 - Security Model</a></li>
-177:           </ul>
-178:         </article>
-179:         <article class="card">
-180:           <h3>Planning Documents</h3>
-181:           <ul>
-182:             <li><a href="auxiliary/planning/PROJECT_OVERVIEW.md">Project Overview</a></li>
-183:             <li><a href="auxiliary/planning/PRODUCT_REQUIREMENTS_DOCUMENT.md">Product Requirements</a></li>
-184:             <li><a href="auxiliary/planning/TECHNICAL_REQUIREMENTS_REFERENCE.md">Technical Requirements</a></li>
-185:             <li><a href="auxiliary/planning/ENGINEERING_EXECUTION_BACKLOG.md">Engineering Backlog</a></li>
-186:             <li><a href="auxiliary/planning/INITIAL_HL_DESCRIPTION.md">Initial High-Level Description</a></li>
-187:           </ul>
-188:         </article>
-189:         <article class="card">
-190:           <h3>Architecture Decision Records</h3>
-191:           <ul>
-192:             <li><a href="auxiliary/adr/0001-frontend-stack.md">ADR 0001 - Frontend Stack</a></li>
-193:             <li><a href="auxiliary/adr/0002-auth-model.md">ADR 0002 - Auth Model</a></li>
-194:             <li><a href="auxiliary/adr/0003-waf.md">ADR 0003 - WAF</a></li>
-195:             <li><a href="auxiliary/adr/0004-ubuntu-resolution.md">ADR 0004 - Ubuntu Resolution</a></li>
-196:             <li><a href="auxiliary/adr/0005-secret-rotation.md">ADR 0005 - Secret Rotation</a></li>
-197:             <li><a href="auxiliary/adr/0006-provider-account-model.md">ADR 0006 - Provider Account Model</a></li>
-198:           </ul>
-199:         </article>
-200:       </div>
-201:     </section>
-202:     <section id="operations">
-203:       <h2>Operations</h2>
-204:       <div class="doc-grid">
-205:         <article class="card">
-206:           <h3>Release Workflow</h3>
-207:           <ul>
-208:             <li><code>ci.yml</code> gates backend tests, compose smoke, e2e, and Terraform checks</li>
-209:             <li><code>infra-plan.yml</code> produces plan artifacts for infrastructure changes</li>
-210:             <li><code>infra-apply.yml</code> applies production infrastructure and config object wiring</li>
-211:             <li><code>app-deploy.yml</code> publishes immutable SHA image tags and rolls ASG safely</li>
-212:             <li><code>app-destroy.yml</code> and <code>infra-destroy.yml</code> execute controlled teardown</li>
-213:           </ul>
-214:         </article>
-215:         <article class="card">
-216:           <h3>Notes</h3>
-217:           <p>
-218:             Image tags are release-specific. The deployment model updates SSM
-219:             image tag parameters and performs launch-before-terminate refreshes.
-220:           </p>
-221:           <p>
-222:             Health checks are performed after deployment to verify application
-223:             readiness.
-224:           </p>
-225:         </article>
-226:       </div>
-227:     </section>
-228:     <section id="security">
-229:       <h2>Security</h2>
-230:       <div class="card">
-231:         <ul>
-232:           <li>No public RDS access; DB lives in private subnets only</li>
-233:           <li>EC2 access uses SSM Session Manager, not SSH ingress</li>
-234:           <li>Secrets are stored in Secrets Manager, never committed in repo</li>
-235:           <li>WAF is attached to ALB with managed rule groups and rate limiting</li>
-236:           <li>IMDSv2 and least-privilege IAM are part of the baseline model</li>
-237:         </ul>
-238:       </div>
-239:     </section>
-240:     <section id="repository">
-241:       <h2>Repository</h2>
-242:       <div class="card">
-243:         <p>
-244:           GitHub: <a href="https://github.com/talorlik/dockerized-java-app-on-ec2" target="_blank" rel="noopener noreferrer">talorlik/dockerized-java-app-on-ec2</a>
-245:         </p>
-246:         <p>
-247:           Root README: <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/README.md" target="_blank" rel="noopener noreferrer">README.md</a>
-248:         </p>
-249:       </div>
-250:     </section>
-251:   </main>
-252:   <footer>
-253:     <p><strong>Dockerized Java App Documentation</strong></p>
-254:     <p>Copyright (c) Tal Orlik</p>
-255:   </footer>
-256:   <button id="scrollToTopButton" class="scroll-to-top" aria-label="Scroll to top" title="Scroll to top">
-257:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-258:       <path d="M18 15l-6-6-6 6"></path>
-259:     </svg>
-260:   </button>
-261:   <script src="main.js"></script>
-262: </body>
-263: </html>
-````
-
-## File: docs/light-theme.css
-````css
-  1: * {
-  2:   margin: 0;
-  3:   padding: 0;
-  4:   box-sizing: border-box;
-  5: }
-  6: :root {
-  7:   --primary-color: #0366d6;
-  8:   --primary-hover: #0256c2;
-  9:   --bg-color: #ffffff;
- 10:   --text-color: #24292e;
- 11:   --border-color: #e1e4e8;
- 12:   --code-bg: #f6f8fa;
- 13:   --nav-bg: #ffffff;
- 14:   --nav-shadow: rgba(0, 0, 0, 0.1);
- 15:   --section-bg: #fafbfc;
- 16:   --table-row-alt: #f6f8fa;
- 17:   --link-color: #0366d6;
- 18: }
- 19: html {
- 20:   scroll-behavior: smooth;
- 21: }
- 22: body {
- 23:   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
- 24:   line-height: 1.6;
- 25:   color: var(--text-color);
- 26:   background-color: var(--bg-color);
- 27:   padding-top: 80px;
- 28: }
- 29: .skip-link {
- 30:   position: absolute;
- 31:   left: -9999px;
- 32:   z-index: 9999;
- 33:   padding: 0.75rem 1rem;
- 34:   background: var(--primary-color);
- 35:   color: #fff;
- 36:   text-decoration: none;
- 37:   font-weight: 600;
- 38: }
- 39: .skip-link:focus {
- 40:   left: 0;
- 41:   top: 0;
- 42:   position: fixed;
- 43: }
- 44: .navbar {
- 45:   position: fixed;
- 46:   top: 0;
- 47:   left: 0;
- 48:   right: 0;
- 49:   background-color: var(--nav-bg);
- 50:   border-bottom: 1px solid var(--border-color);
- 51:   box-shadow: 0 2px 4px var(--nav-shadow);
- 52:   z-index: 1000;
- 53:   padding: 5px 20px;
- 54: }
- 55: .nav-container {
- 56:   max-width: 1200px;
- 57:   margin: 0 auto;
- 58:   display: flex;
- 59:   justify-content: space-between;
- 60:   align-items: center;
- 61: }
- 62: .nav-logo {
- 63:   font-size: 18px;
- 64:   font-weight: 600;
- 65:   color: var(--text-color);
- 66:   text-decoration: none;
- 67:   margin-right: 20px;
- 68:   white-space: nowrap;
- 69: }
- 70: .nav-menu {
- 71:   display: flex;
- 72:   list-style: none;
- 73:   gap: 10px;
- 74:   align-items: center;
- 75: }
- 76: .nav-menu li {
- 77:   display: flex;
- 78:   align-items: center;
- 79:   padding: 10px 12px;
- 80: }
- 81: .nav-menu a {
- 82:   color: var(--text-color);
- 83:   text-decoration: none;
- 84:   font-size: 14px;
- 85:   border-bottom: 2px solid transparent;
- 86: }
- 87: .nav-menu a:hover,
- 88: .nav-menu a.active {
- 89:   color: var(--primary-color);
- 90:   border-bottom-color: var(--primary-color);
- 91: }
- 92: .mobile-menu-toggle {
- 93:   display: none;
- 94:   background: none;
- 95:   border: none;
- 96:   font-size: 24px;
- 97:   cursor: pointer;
- 98:   padding: 10px;
- 99:   color: var(--text-color);
-100: }
-101: .theme-toggle {
-102:   background: none;
-103:   border: 1px solid var(--border-color);
-104:   border-radius: 6px;
-105:   color: var(--text-color);
-106:   cursor: pointer;
-107:   font-size: 20px;
-108:   padding: 4px 10px;
-109:   margin-left: 10px;
-110: }
-111: .theme-toggle .icon.hidden {
-112:   display: none;
-113: }
-114: .hero {
-115:   color: var(--text-color);
-116:   padding: 60px 20px 0 20px;
-117:   text-align: center;
-118: }
-119: .hero-content {
-120:   max-width: 1200px;
-121:   margin: 0 auto;
-122: }
-123: .hero h1 {
-124:   font-size: 2.5em;
-125:   margin-bottom: 20px;
-126:   font-weight: 600;
-127: }
-128: .hero p {
-129:   font-size: 1.2em;
-130:   margin-bottom: 30px;
-131: }
-132: .hero-banner {
-133:   max-width: 100%;
-134:   height: auto;
-135:   margin-top: 30px;
-136:   border-radius: 8px;
-137:   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-138: }
-139: section {
-140:   max-width: 1200px;
-141:   margin: 0 auto;
-142:   padding: 40px 20px 0 20px;
-143:   scroll-margin-top: 100px;
-144: }
-145: section h2 {
-146:   font-size: 2em;
-147:   margin-bottom: 20px;
-148:   padding-bottom: 10px;
-149:   border-bottom: 2px solid var(--border-color);
-150: }
-151: section h3 {
-152:   font-size: 1.5em;
-153:   margin-bottom: 15px;
-154: }
-155: .card {
-156:   background: var(--bg-color);
-157:   border: 1px solid var(--border-color);
-158:   border-radius: 6px;
-159:   padding: 20px;
-160:   margin-bottom: 20px;
-161:   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-162: }
-163: .doc-grid {
-164:   display: grid;
-165:   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-166:   gap: 20px;
-167:   margin-top: 20px;
-168: }
-169: ul, ol {
-170:   list-style-position: inside;
-171: }
-172: a {
-173:   color: var(--link-color);
-174:   text-decoration: none;
-175: }
-176: a:hover {
-177:   text-decoration: underline;
-178: }
-179: p {
-180:   margin-bottom: 15px;
-181: }
-182: code {
-183:   background-color: var(--code-bg);
-184:   padding: 2px 6px;
-185:   border-radius: 3px;
-186:   border: 1px solid var(--border-color);
-187:   color: #d73a49;
-188: }
-189: pre {
-190:   background-color: var(--code-bg);
-191:   padding: 16px;
-192:   border-radius: 6px;
-193:   overflow-x: auto;
-194:   border: 1px solid var(--border-color);
-195: }
-196: pre code {
-197:   background: none;
-198:   padding: 0;
-199:   border: none;
-200:   color: var(--text-color);
-201: }
-202: footer {
-203:   background-color: var(--section-bg);
-204:   border-top: 1px solid var(--border-color);
-205:   padding: 30px 20px;
-206:   text-align: center;
-207:   color: #586069;
-208: }
-209: .scroll-to-top {
-210:   position: fixed;
-211:   bottom: 30px;
-212:   right: 30px;
-213:   width: 50px;
-214:   height: 50px;
-215:   border-radius: 50%;
-216:   background-color: rgba(3, 102, 214, 0.15);
-217:   border: 2px solid rgba(3, 102, 214, 0.3);
-218:   color: var(--primary-color);
-219:   cursor: pointer;
-220:   display: flex;
-221:   align-items: center;
-222:   justify-content: center;
-223:   z-index: 999;
-224:   opacity: 0;
-225:   visibility: hidden;
-226:   pointer-events: none;
-227:   transition: opacity 0.3s ease, visibility 0.3s ease;
-228: }
-229: .scroll-to-top.visible {
-230:   opacity: 1;
-231:   visibility: visible;
-232:   pointer-events: auto;
-233: }
-234: @media (max-width: 768px) {
-235:   .mobile-menu-toggle {
-236:     display: block;
-237:   }
-238:   .nav-menu {
-239:     position: fixed;
-240:     left: -100%;
-241:     top: 60px;
-242:     flex-direction: column;
-243:     background-color: var(--nav-bg);
-244:     width: 100%;
-245:     text-align: center;
-246:     transition: 0.3s;
-247:     padding: 20px 0;
-248:     border-bottom: 1px solid var(--border-color);
-249:   }
-250:   .nav-menu.active {
-251:     left: 0;
-252:   }
-253: }
-````
-
-## File: docs/main.js
-````javascript
-  1: // Theme management
-  2: const themeStylesheet = document.getElementById('theme-stylesheet');
-  3: const themeToggle = document.getElementById('themeToggle');
-  4: const sunIcon = document.getElementById('sunIcon');
-  5: const moonIcon = document.getElementById('moonIcon');
-  6: const currentTheme = localStorage.getItem('theme') || 'light';
-  7: function setTheme(theme) {
-  8:   if (theme === 'dark') {
-  9:     themeStylesheet.href = 'dark-theme.css';
- 10:     sunIcon.classList.remove('hidden');
- 11:     moonIcon.classList.add('hidden');
- 12:     themeToggle.setAttribute('aria-label', 'Switch to light theme');
- 13:     themeToggle.setAttribute('title', 'Switch to light theme');
- 14:     localStorage.setItem('theme', 'dark');
- 15:   } else {
- 16:     themeStylesheet.href = 'light-theme.css';
- 17:     sunIcon.classList.add('hidden');
- 18:     moonIcon.classList.remove('hidden');
- 19:     themeToggle.setAttribute('aria-label', 'Switch to dark theme');
- 20:     themeToggle.setAttribute('title', 'Switch to dark theme');
- 21:     localStorage.setItem('theme', 'light');
- 22:   }
- 23: }
- 24: setTheme(currentTheme);
- 25: themeToggle.addEventListener('click', () => {
- 26:   const newTheme = themeStylesheet.href.includes('dark-theme.css') ? 'light' : 'dark';
- 27:   setTheme(newTheme);
- 28: });
- 29: // Mobile menu toggle
- 30: const mobileMenuToggle = document.getElementById('mobileMenuToggle');
- 31: const navMenu = document.getElementById('navMenu');
- 32: mobileMenuToggle.addEventListener('click', () => {
- 33:   navMenu.classList.toggle('active');
- 34: });
- 35: // Close mobile menu when clicking on a link
- 36: const navLinks = document.querySelectorAll('.nav-menu a');
- 37: navLinks.forEach((link) => {
- 38:   link.addEventListener('click', () => {
- 39:     navMenu.classList.remove('active');
- 40:   });
- 41: });
- 42: // Active section highlighting
- 43: const sections = document.querySelectorAll('section[id]');
- 44: const navLinksArray = Array.from(navLinks);
- 45: function highlightActiveSection() {
- 46:   const scrollY = window.pageYOffset;
- 47:   sections.forEach((section) => {
- 48:     const sectionHeight = section.offsetHeight;
- 49:     const sectionTop = section.offsetTop - 150;
- 50:     const sectionId = section.getAttribute('id');
- 51:     if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
- 52:       navLinksArray.forEach((link) => {
- 53:         link.classList.remove('active');
- 54:         if (link.getAttribute('href') === `#${sectionId}`) {
- 55:           link.classList.add('active');
- 56:         }
- 57:       });
- 58:     }
- 59:   });
- 60: }
- 61: window.addEventListener('scroll', highlightActiveSection);
- 62: window.addEventListener('load', highlightActiveSection);
- 63: // Scroll to top button
- 64: function initScrollToTop() {
- 65:   const scrollToTopButton = document.getElementById('scrollToTopButton');
- 66:   if (!scrollToTopButton) {
- 67:     return;
- 68:   }
- 69:   function checkScroll() {
- 70:     if (window.pageYOffset > 100 || document.documentElement.scrollTop > 100) {
- 71:       scrollToTopButton.classList.add('visible');
- 72:     } else {
- 73:       scrollToTopButton.classList.remove('visible');
- 74:     }
- 75:   }
- 76:   checkScroll();
- 77:   window.addEventListener('scroll', checkScroll);
- 78:   scrollToTopButton.addEventListener('click', (e) => {
- 79:     e.preventDefault();
- 80:     window.scrollTo({
- 81:       top: 0,
- 82:       behavior: 'smooth',
- 83:     });
- 84:   });
- 85: }
- 86: if (document.readyState === 'loading') {
- 87:   document.addEventListener('DOMContentLoaded', initScrollToTop);
- 88: } else {
- 89:   initScrollToTop();
- 90: }
- 91: // Smooth scroll for anchor links
- 92: document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
- 93:   anchor.addEventListener('click', function (e) {
- 94:     e.preventDefault();
- 95:     const target = document.querySelector(this.getAttribute('href'));
- 96:     if (target) {
- 97:       target.scrollIntoView({
- 98:         behavior: 'smooth',
- 99:         block: 'start',
-100:       });
-101:     }
-102:   });
-103: });
-````
-
-## File: repomix.config.json
-````json
- 1: {
- 2:   "$schema": "https://repomix.com/schemas/latest/schema.json",
- 3:   "input": {
- 4:     "maxFileSize": 52428800,
- 5:     "instructionFilePath": "repomix-instruction.md"
- 6:   },
- 7:   "output": {
- 8:     "filePath": "repomix-output.md",
- 9:     "style": "markdown",
-10:     "parsableStyle": false,
-11:     "fileSummary": true,
-12:     "directoryStructure": true,
-13:     "files": true,
-14:     "removeComments": false,
-15:     "removeEmptyLines": true,
-16:     "compress": false,
-17:     "topFilesLength": 15,
-18:     "showLineNumbers": true,
-19:     "truncateBase64": false,
-20:     "copyToClipboard": false,
-21:     "includeFullDirectoryStructure": true,
-22:     "tokenCountTree": false,
-23:     "git": {
-24:       "sortByChanges": true,
-25:       "sortByChangesMaxCommits": 100,
-26:       "includeDiffs": false,
-27:       "includeLogs": false,
-28:       "includeLogsCount": 50
-29:     }
-30:   },
-31:   "include": [],
-32:   "ignore": {
-33:     "useGitignore": true,
-34:     "useDotIgnore": true,
-35:     "useDefaultPatterns": true,
-36:     "customPatterns": []
-37:   },
-38:   "security": {
-39:     "enableSecurityCheck": true
-40:   },
-41:   "tokenCount": {
-42:     "encoding": "o200k_base"
-43:   }
-44: }
-````
-
-## File: .github/workflows/app-destroy.yml
-````yaml
-  1: ###############################################################################
-  2: # app-destroy
-  3: #
-  4: # Tears down only the application-layer artifacts (ECR images, ASG instances,
-  5: # SSM release pointers, S3 compose object). Leaves the underlying
-  6: # infrastructure intact so a fresh deploy can come up over the same VPC/ALB/RDS.
-  7: #
-  8: # Sequence:
-  9: #   1. Confirm the user typed the destroy phrase exactly.
- 10: #   2. Set the ASG min/desired/max to 0 and wait until in-service count is 0.
- 11: #      This stops the running containers without churning the launch template.
- 12: #   3. Reset the three SSM release pointers to "bootstrap" so a future
- 13: #      instance launch won't try to pull a deleted image tag.
- 14: #   4. Delete the docker-compose.prod.yml S3 object referenced by the
- 15: #      compose-object SSM parameter.
- 16: #   5. Empty both ECR repositories (delete every image / image-index in
- 17: #      `java-app/backend` and `java-app/frontend`).
- 18: #
- 19: # Use `infra-destroy.yml` afterwards to remove the underlying infrastructure
- 20: # itself.
- 21: ###############################################################################
- 22: name: app-destroy
- 23: on:
- 24:   workflow_dispatch:
- 25:     inputs:
- 26:       confirm:
- 27:         description: 'Type DESTROY (uppercase) to confirm'
- 28:         required: true
- 29:         default: ''
- 30: permissions:
- 31:   id-token: write
- 32:   contents: read
- 33: concurrency:
- 34:   group: app-destroy
- 35:   cancel-in-progress: false
- 36: jobs:
- 37:   destroy:
- 38:     name: tear down app layer
- 39:     runs-on: ubuntu-latest
- 40:     environment: prod   # forces the environment-protection rule (manual approval)
- 41:     steps:
- 42:       - name: Validate confirmation phrase
- 43:         run: |
- 44:           if [ "${{ github.event.inputs.confirm }}" != "DESTROY" ]; then
- 45:             echo "::error::confirm input must be exactly 'DESTROY'."
- 46:             exit 1
- 47:           fi
- 48:       - uses: actions/checkout@v4
- 49:       - uses: aws-actions/configure-aws-credentials@v4
- 50:         with:
- 51:           role-to-assume: ${{ secrets.DEPLOYMENT_ROLE_ARN }}
- 52:           aws-region: ${{ vars.AWS_REGION }}
- 53:           role-session-name: gha-app-destroy
- 54:       # -------------------------------------------------------------------
- 55:       # 1. Resolve ASG name (deterministic in this stack, but follow the
- 56:       #    same Tags-based lookup the deploy workflow uses).
- 57:       # -------------------------------------------------------------------
- 58:       - id: asg
- 59:         name: Resolve ASG name
- 60:         run: |
- 61:           NAME=$(aws autoscaling describe-auto-scaling-groups \
- 62:             --query "AutoScalingGroups[?Tags[?Key=='Project' && Value=='java-app'] && Tags[?Key=='Environment' && Value=='prod']].AutoScalingGroupName | [0]" \
- 63:             --output text)
- 64:           if [ "$NAME" = "None" ] || [ -z "$NAME" ]; then
- 65:             NAME="java-app-prod-asg"
- 66:           fi
- 67:           echo "name=$NAME" >> "$GITHUB_OUTPUT"
- 68:       # -------------------------------------------------------------------
- 69:       # 2. Scale ASG to 0 and wait for instances to drain.
- 70:       # -------------------------------------------------------------------
- 71:       - name: Scale ASG to 0
- 72:         run: |
- 73:           aws autoscaling update-auto-scaling-group \
- 74:             --auto-scaling-group-name "${{ steps.asg.outputs.name }}" \
- 75:             --min-size 0 --desired-capacity 0 --max-size 0
- 76:       - name: Wait for ASG to drain
- 77:         run: |
- 78:           for i in $(seq 1 60); do
- 79:             COUNT=$(aws autoscaling describe-auto-scaling-groups \
- 80:               --auto-scaling-group-names "${{ steps.asg.outputs.name }}" \
- 81:               --query "AutoScalingGroups[0].Instances | length(@)" \
- 82:               --output text)
- 83:             echo "in-service instances: $COUNT"
- 84:             if [ "$COUNT" = "0" ]; then exit 0; fi
- 85:             sleep 15
- 86:           done
- 87:           echo "::error::timed out waiting for ASG to drain"
- 88:           exit 1
- 89:       # -------------------------------------------------------------------
- 90:       # 3. Reset release pointers so a re-scale doesn't pull a deleted tag.
- 91:       # -------------------------------------------------------------------
- 92:       - name: Reset SSM release pointers to 'bootstrap'
- 93:         run: |
- 94:           for p in /java-app/prod/backend-image-tag /java-app/prod/frontend-image-tag /java-app/prod/release-id; do
- 95:             aws ssm put-parameter --name "$p" --type String --overwrite --value "bootstrap"
- 96:           done
- 97:       # -------------------------------------------------------------------
- 98:       # 4. Delete the published compose-object from S3.
- 99:       # -------------------------------------------------------------------
-100:       - name: Delete compose object in S3
-101:         run: |
-102:           BUCKET="java-app-prod-config-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
-103:           aws s3 rm "s3://$BUCKET/docker-compose.prod.yml" || true
-104:       # -------------------------------------------------------------------
-105:       # 5. Empty both ECR repositories.
-106:       # -------------------------------------------------------------------
-107:       - name: Purge ECR images
-108:         run: |
-109:           for repo in java-app/backend java-app/frontend; do
-110:             echo "purging $repo"
-111:             IDS=$(aws ecr list-images --repository-name "$repo" --query 'imageIds[*]' --output json)
-112:             COUNT=$(echo "$IDS" | jq 'length')
-113:             if [ "$COUNT" -gt 0 ]; then
-114:               # batch-delete-image accepts up to 100 image IDs at a time;
-115:               # if there are more, page in chunks.
-116:               echo "$IDS" | jq -c '. as $a | range(0; ($a | length); 100) | $a[.:.+100]' | \
-117:                 while read -r CHUNK; do
-118:                   aws ecr batch-delete-image \
-119:                     --repository-name "$repo" \
-120:                     --image-ids "$CHUNK"
-121:                 done
-122:             fi
-123:           done
+## File: .github/scripts/purge_pending_secrets.sh
+````bash
+ 1: #!/usr/bin/env bash
+ 2: # Purge any AWS Secrets Manager secrets that are in the PendingDeletion state
+ 3: # at the well-known paths managed by infra/envs/prod/secrets.tf.
+ 4: #
+ 5: # Why this exists: AWS forbids creating a new secret with a name that is
+ 6: # currently scheduled for deletion. After a `terraform destroy`, the four
+ 7: # app secrets enter a 7-day recovery window and block any subsequent
+ 8: # `terraform apply` until the window expires or the secrets are forcibly
+ 9: # removed. This script is opt-in (gated by the infra-apply workflow input
+10: # `purge_pending_secrets`) and only acts on secrets whose `DeletedDate` is
+11: # set, leaving healthy secrets untouched.
+12: #
+13: # Idempotent: safe to re-run. Exits 0 even if no secrets were pending.
+14: # Requires: AWS CLI v2, credentials already exported (the workflow does this
+15: # via aws-actions/configure-aws-credentials before invoking).
+16: set -euo pipefail
+17: # Hardcoded list - matches `${local.secret_prefix}/...` in
+18: # infra/envs/prod/secrets.tf. Update both places if the naming changes.
+19: SECRETS=(
+20:   "/java-app/prod/db/app-user"
+21:   "/java-app/prod/admin"
+22:   "/java-app/prod/jwt"
+23:   "/java-app/prod/ses"
+24: )
+25: for s in "${SECRETS[@]}"; do
+26:   # describe-secret returns non-zero (ResourceNotFoundException) when the
+27:   # secret has never existed; treat that as "nothing to purge".
+28:   deleted=$(aws secretsmanager describe-secret \
+29:     --secret-id "$s" \
+30:     --query 'DeletedDate' \
+31:     --output text 2>/dev/null || echo "MISSING")
+32:   case "$deleted" in
+33:     MISSING|None)
+34:       echo "skip  $s (not pending deletion)"
+35:       ;;
+36:     *)
+37:       echo "purge $s (DeletedDate=$deleted)"
+38:       aws secretsmanager delete-secret \
+39:         --secret-id "$s" \
+40:         --force-delete-without-recovery >/dev/null
+41:       ;;
+42:   esac
+43: done
 ````
 
 ## File: app/backend/src/main/java/com/talorlik/javaapp/config/AppProperties.java
@@ -2560,177 +1549,6 @@ repomix.config.json
 40: ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
 ````
 
-## File: app/backend/pom.xml
-````xml
-  1: <?xml version="1.0" encoding="UTF-8"?>
-  2: <project xmlns="http://maven.apache.org/POM/4.0.0"
-  3:          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  4:          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-  5:                              https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  6:     <modelVersion>4.0.0</modelVersion>
-  7:     <parent>
-  8:         <groupId>org.springframework.boot</groupId>
-  9:         <artifactId>spring-boot-starter-parent</artifactId>
- 10:         <version>3.5.0</version>
- 11:         <relativePath/>
- 12:     </parent>
- 13:     <groupId>com.talorlik</groupId>
- 14:     <artifactId>java-app-backend</artifactId>
- 15:     <version>1.0.0</version>
- 16:     <packaging>jar</packaging>
- 17:     <name>java-app-backend</name>
- 18:     <description>Java Signup Platform - Backend</description>
- 19:     <properties>
- 20:         <java.version>21</java.version>
- 21:         <maven.compiler.source>21</maven.compiler.source>
- 22:         <maven.compiler.target>21</maven.compiler.target>
- 23:         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
- 24:         <jjwt.version>0.12.6</jjwt.version>
- 25:         <aws.sdk.version>2.28.16</aws.sdk.version>
- 26:         <testcontainers.version>1.20.4</testcontainers.version>
- 27:         <bucket4j.version>8.10.1</bucket4j.version>
- 28:     </properties>
- 29:     <dependencies>
- 30:         <!-- Web + validation -->
- 31:         <dependency>
- 32:             <groupId>org.springframework.boot</groupId>
- 33:             <artifactId>spring-boot-starter-web</artifactId>
- 34:         </dependency>
- 35:         <dependency>
- 36:             <groupId>org.springframework.boot</groupId>
- 37:             <artifactId>spring-boot-starter-validation</artifactId>
- 38:         </dependency>
- 39:         <!-- Persistence -->
- 40:         <dependency>
- 41:             <groupId>org.springframework.boot</groupId>
- 42:             <artifactId>spring-boot-starter-data-jpa</artifactId>
- 43:         </dependency>
- 44:         <dependency>
- 45:             <groupId>com.mysql</groupId>
- 46:             <artifactId>mysql-connector-j</artifactId>
- 47:         </dependency>
- 48:         <dependency>
- 49:             <groupId>org.flywaydb</groupId>
- 50:             <artifactId>flyway-core</artifactId>
- 51:         </dependency>
- 52:         <dependency>
- 53:             <groupId>org.flywaydb</groupId>
- 54:             <artifactId>flyway-mysql</artifactId>
- 55:         </dependency>
- 56:         <!-- Security + JWT -->
- 57:         <dependency>
- 58:             <groupId>org.springframework.boot</groupId>
- 59:             <artifactId>spring-boot-starter-security</artifactId>
- 60:         </dependency>
- 61:         <dependency>
- 62:             <groupId>io.jsonwebtoken</groupId>
- 63:             <artifactId>jjwt-api</artifactId>
- 64:             <version>${jjwt.version}</version>
- 65:         </dependency>
- 66:         <dependency>
- 67:             <groupId>io.jsonwebtoken</groupId>
- 68:             <artifactId>jjwt-impl</artifactId>
- 69:             <version>${jjwt.version}</version>
- 70:             <scope>runtime</scope>
- 71:         </dependency>
- 72:         <dependency>
- 73:             <groupId>io.jsonwebtoken</groupId>
- 74:             <artifactId>jjwt-jackson</artifactId>
- 75:             <version>${jjwt.version}</version>
- 76:             <scope>runtime</scope>
- 77:         </dependency>
- 78:         <!-- Actuator -->
- 79:         <dependency>
- 80:             <groupId>org.springframework.boot</groupId>
- 81:             <artifactId>spring-boot-starter-actuator</artifactId>
- 82:         </dependency>
- 83:         <!-- AWS SDK v2 -->
- 84:         <dependency>
- 85:             <groupId>software.amazon.awssdk</groupId>
- 86:             <artifactId>secretsmanager</artifactId>
- 87:             <version>${aws.sdk.version}</version>
- 88:         </dependency>
- 89:         <dependency>
- 90:             <groupId>software.amazon.awssdk</groupId>
- 91:             <artifactId>sesv2</artifactId>
- 92:             <version>${aws.sdk.version}</version>
- 93:         </dependency>
- 94:         <!-- Rate limiting -->
- 95:         <dependency>
- 96:             <groupId>com.bucket4j</groupId>
- 97:             <artifactId>bucket4j-core</artifactId>
- 98:             <version>${bucket4j.version}</version>
- 99:         </dependency>
-100:         <!-- ===== Test ===== -->
-101:         <dependency>
-102:             <groupId>org.springframework.boot</groupId>
-103:             <artifactId>spring-boot-starter-test</artifactId>
-104:             <scope>test</scope>
-105:         </dependency>
-106:         <dependency>
-107:             <groupId>org.springframework.security</groupId>
-108:             <artifactId>spring-security-test</artifactId>
-109:             <scope>test</scope>
-110:         </dependency>
-111:         <dependency>
-112:             <groupId>org.testcontainers</groupId>
-113:             <artifactId>junit-jupiter</artifactId>
-114:             <version>${testcontainers.version}</version>
-115:             <scope>test</scope>
-116:         </dependency>
-117:         <dependency>
-118:             <groupId>org.testcontainers</groupId>
-119:             <artifactId>mysql</artifactId>
-120:             <version>${testcontainers.version}</version>
-121:             <scope>test</scope>
-122:         </dependency>
-123:     </dependencies>
-124:     <build>
-125:         <finalName>app</finalName>
-126:         <plugins>
-127:             <plugin>
-128:                 <groupId>org.springframework.boot</groupId>
-129:                 <artifactId>spring-boot-maven-plugin</artifactId>
-130:                 <configuration>
-131:                     <executable>true</executable>
-132:                     <layers>
-133:                         <enabled>true</enabled>
-134:                     </layers>
-135:                 </configuration>
-136:             </plugin>
-137:             <plugin>
-138:                 <groupId>org.apache.maven.plugins</groupId>
-139:                 <artifactId>maven-surefire-plugin</artifactId>
-140:                 <configuration>
-141:                     <includes>
-142:                         <include>**/unit/**/*Test.java</include>
-143:                         <include>**/*UnitTest.java</include>
-144:                     </includes>
-145:                 </configuration>
-146:             </plugin>
-147:             <plugin>
-148:                 <groupId>org.apache.maven.plugins</groupId>
-149:                 <artifactId>maven-failsafe-plugin</artifactId>
-150:                 <configuration>
-151:                     <includes>
-152:                         <include>**/integration/**/*IT.java</include>
-153:                         <include>**/*IT.java</include>
-154:                     </includes>
-155:                 </configuration>
-156:                 <executions>
-157:                     <execution>
-158:                         <goals>
-159:                             <goal>integration-test</goal>
-160:                             <goal>verify</goal>
-161:                         </goals>
-162:                     </execution>
-163:                 </executions>
-164:             </plugin>
-165:         </plugins>
-166:     </build>
-167: </project>
-````
-
 ## File: app/docker/docker-compose.local.yml
 ````yaml
  1: ###############################################################################
@@ -3324,30 +2142,6 @@ repomix.config.json
 49: }
 ````
 
-## File: app/frontend/src/index.html
-````html
- 1: <!doctype html>
- 2: <html lang="en">
- 3: <head>
- 4:   <meta charset="utf-8" />
- 5:   <meta name="viewport" content="width=device-width, initial-scale=1" />
- 6:   <title>Java Signup Platform</title>
- 7:   <link rel="stylesheet" href="/css/main.css" />
- 8: </head>
- 9: <body>
-10:   <header class="topbar">
-11:     <a class="brand" href="/">java.talorlik.com</a>
-12:     <nav id="nav"></nav>
-13:   </header>
-14:   <main id="app"></main>
-15:   <footer class="bottombar">
-16:     <span>Java Signup Platform</span>
-17:   </footer>
-18:   <script type="module" src="/js/app.js"></script>
-19: </body>
-20: </html>
-````
-
 ## File: app/frontend/Dockerfile
 ````
  1: ###############################################################################
@@ -3462,6 +2256,1121 @@ repomix.config.json
 89:         }
 90:     }
 91: }
+````
+
+## File: docs/auxiliary/architecture-diagrams/generated-python.py
+````python
+  1: #!/usr/bin/env python3
+  2: """
+  3: Generate a unified AWS architecture diagram for this repository.
+  4: Outputs:
+  5: - docs/auxiliary/architecture-diagrams/diagrams/java_app_architecture.png
+  6: - docs/auxiliary/architecture-diagrams/diagrams/java_app_architecture.dot
+  7: - docs/auxiliary/architecture-diagrams/diagrams/java_app_architecture.drawio
+  8: """
+  9: from __future__ import annotations
+ 10: import json
+ 11: import os
+ 12: import subprocess
+ 13: import sys
+ 14: from pathlib import Path
+ 15: from diagrams import Cluster, Diagram, Edge
+ 16: from diagrams.aws.compute import AutoScaling, EC2, ECR
+ 17: from diagrams.aws.database import RDS
+ 18: from diagrams.aws.management import Cloudwatch, CloudwatchLogs
+ 19: from diagrams.aws.management import SystemsManagerParameterStore
+ 20: from diagrams.aws.network import (
+ 21:     InternetGateway,
+ 22:     NATGateway,
+ 23:     PrivateSubnet,
+ 24:     PublicSubnet,
+ 25:     Route53,
+ 26:     Route53HostedZone,
+ 27:     VPC,
+ 28:     ElbApplicationLoadBalancer,
+ 29: )
+ 30: from diagrams.aws.security import CertificateManager, IAMRole, SecretsManager, WAF
+ 31: from diagrams.aws.storage import S3
+ 32: from diagrams.generic.compute import Rack
+ 33: from diagrams.generic.database import SQL
+ 34: from diagrams.generic.network import Firewall
+ 35: from diagrams.onprem.ci import GithubActions
+ 36: from diagrams.onprem.client import Users
+ 37: SCRIPT_DIR = Path(__file__).resolve().parent
+ 38: REPO_ROOT = SCRIPT_DIR.parent.parent.parent
+ 39: OUTPUT_DIR = SCRIPT_DIR / "diagrams"
+ 40: OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+ 41: TIER_COLORS = {
+ 42:     "EDGE_DNS": "#E3F2FD",
+ 43:     "INGRESS": "#E8EAF6",
+ 44:     "NETWORK": "#E0F7FA",
+ 45:     "COMPUTE": "#E8F5E9",
+ 46:     "DELIVERY_RELEASE": "#F3E5F5",
+ 47:     "DATA": "#FFF3E0",
+ 48:     "STORAGE": "#FFF8E1",
+ 49:     "SECURITY_CONFIG": "#FFEBEE",
+ 50:     "OBSERVABILITY": "#ECEFF1",
+ 51: }
+ 52: def cluster_attrs(bg: str) -> dict:
+ 53:     return {"style": "filled", "color": bg}
+ 54: def _load_plan(path: Path) -> dict:
+ 55:     if not path.exists():
+ 56:         return {}
+ 57:     try:
+ 58:         return json.loads(path.read_text(encoding="utf-8"))
+ 59:     except (json.JSONDecodeError, OSError):
+ 60:         return {}
+ 61: def _extract_type_set(plan: dict) -> set[str]:
+ 62:     resource_types: set[str] = set()
+ 63:     for change in plan.get("resource_changes", []):
+ 64:         rtype = change.get("type")
+ 65:         if rtype:
+ 66:             resource_types.add(rtype)
+ 67:     return resource_types
+ 68: def _collect_plan_context() -> dict:
+ 69:     bootstrap_plan = _load_plan(REPO_ROOT / "infra/bootstrap/tfplan.bootstrap.json")
+ 70:     prod_plan = _load_plan(REPO_ROOT / "infra/envs/prod/tfplan.prod.json")
+ 71:     bootstrap_types = _extract_type_set(bootstrap_plan)
+ 72:     prod_types = _extract_type_set(prod_plan)
+ 73:     return {
+ 74:         "bootstrap_present": bool(bootstrap_plan),
+ 75:         "prod_present": bool(prod_plan),
+ 76:         "bootstrap_types": bootstrap_types,
+ 77:         "prod_types": prod_types,
+ 78:     }
+ 79: def _convert_dot_to_drawio(dot_path: Path, drawio_path: Path) -> None:
+ 80:     try:
+ 81:         subprocess.run(
+ 82:             ["graphviz2drawio", str(dot_path), "-o", str(drawio_path)],
+ 83:             check=True,
+ 84:             capture_output=True,
+ 85:             text=True,
+ 86:         )
+ 87:     except (FileNotFoundError, subprocess.CalledProcessError):
+ 88:         pass
+ 89: def build_diagram() -> str:
+ 90:     context = _collect_plan_context()
+ 91:     filename = "java_app_architecture"
+ 92:     previous_cwd = Path.cwd()
+ 93:     os.chdir(OUTPUT_DIR)
+ 94:     try:
+ 95:         with Diagram(
+ 96:             "Dockerized Java App on AWS EC2 (Unified Architecture)",
+ 97:             filename=filename,
+ 98:             outformat=["png", "dot"],
+ 99:             show=False,
+100:             direction="TB",
+101:             graph_attr={"splines": "ortho", "nodesep": "0.7", "ranksep": "0.9"},
+102:         ):
+103:             users = Users("End Users")
+104:             github = GithubActions("GitHub Actions\n(ci/infra/app-deploy)")
+105:             with Cluster("DOMAIN ACCOUNT", graph_attr=cluster_attrs(TIER_COLORS["EDGE_DNS"])):
+106:                 registered_domain = Firewall("Registered Domain\n(talorlik.com)")
+107:                 hosted_zone = Route53HostedZone("Route 53 Hosted Zone")
+108:                 domain_dns_role = IAMRole("Route 53 DNS Role\n(cross-account)")
+109:             with Cluster(
+110:                 "DEPLOYMENT ACCOUNT",
+111:                 graph_attr=cluster_attrs(TIER_COLORS["NETWORK"]),
+112:             ):
+113:                 with Cluster(
+114:                     "EDGE AND DNS",
+115:                     graph_attr=cluster_attrs(TIER_COLORS["EDGE_DNS"]),
+116:                 ):
+117:                     route53_alias = Route53("java.talorlik.com")
+118:                     acm = CertificateManager("ACM Certificate")
+119:                     waf = WAF("WAFv2 Web ACL")
+120:                     alb = ElbApplicationLoadBalancer("ALB\nHTTPS 8443 -> HTTP 8080")
+121:                 with Cluster(
+122:                     "SECURITY AND CONFIG",
+123:                     graph_attr=cluster_attrs(TIER_COLORS["SECURITY_CONFIG"]),
+124:                 ):
+125:                     oidc_role = IAMRole("github-role\n(OIDC trusted)")
+126:                     ec2_profile = IAMRole("EC2 Instance Profile")
+127:                     secrets = SecretsManager("Secrets Manager")
+128:                     ssm_params = SystemsManagerParameterStore("Parameter Store")
+129:                 with Cluster("DELIVERY", graph_attr=cluster_attrs(TIER_COLORS["DELIVERY_RELEASE"])):
+130:                     ecr = ECR("ECR backend/frontend")
+131:                 with Cluster("NETWORK", graph_attr=cluster_attrs(TIER_COLORS["NETWORK"])):
+132:                     vpc = VPC("VPC")
+133:                     igw = InternetGateway("Internet Gateway")
+134:                     nat = NATGateway("NAT Gateway")
+135:                     with Cluster("Public Subnets", graph_attr=cluster_attrs(TIER_COLORS["INGRESS"])):
+136:                         pub_a = PublicSubnet("Public Subnet A")
+137:                         pub_b = PublicSubnet("Public Subnet B")
+138:                     with Cluster("Private App Subnets", graph_attr=cluster_attrs(TIER_COLORS["COMPUTE"])):
+139:                         app_a = PrivateSubnet("Private App A")
+140:                         app_b = PrivateSubnet("Private App B")
+141:                         asg = AutoScaling("EC2 Auto Scaling Group")
+142:                         ec2 = EC2("EC2 Instances")
+143:                         containers = Rack("Docker Compose\nNginx + Spring Boot")
+144:                     with Cluster("DB Subnets", graph_attr=cluster_attrs(TIER_COLORS["DATA"])):
+145:                         db_a = PrivateSubnet("Private DB A")
+146:                         db_b = PrivateSubnet("Private DB B")
+147:                         rds = RDS("RDS MySQL")
+148:                 with Cluster(
+149:                     "OBSERVABILITY AND STORAGE",
+150:                     graph_attr=cluster_attrs(TIER_COLORS["OBSERVABILITY"]),
+151:                 ):
+152:                     cloudwatch = Cloudwatch("CloudWatch")
+153:                     cloudwatch_logs = CloudwatchLogs("CloudWatch Logs")
+154:                     alb_logs = S3("S3 ALB Access Logs")
+155:                 with Cluster("MESSAGING", graph_attr=cluster_attrs(TIER_COLORS["DATA"])):
+156:                     ses = SQL("Amazon SES")
+157:             users >> Edge(label="DNS lookup") >> route53_alias
+158:             route53_alias >> Edge(label="A/ALIAS") >> hosted_zone
+159:             route53_alias >> Edge(label="HTTPS 8443") >> waf >> alb
+160:             acm >> Edge(label="TLS cert") >> alb
+161:             alb >> Edge(label="HTTP 8080") >> asg >> ec2 >> containers
+162:             containers >> Edge(label="/api -> backend") >> containers
+163:             containers >> Edge(label="MySQL 3306") >> rds
+164:             containers >> Edge(label="read secrets") >> secrets
+165:             containers >> Edge(label="read release/config") >> ssm_params
+166:             containers >> Edge(label="send emails") >> ses
+167:             ec2 >> Edge(label="image pull") >> ecr
+168:             ec2_profile >> ec2
+169:             github >> Edge(label="OIDC") >> oidc_role
+170:             oidc_role >> Edge(label="AssumeRole") >> domain_dns_role
+171:             github >> Edge(label="build/push") >> ecr
+172:             github >> Edge(label="update release pointers") >> ssm_params
+173:             github >> Edge(label="instance refresh") >> asg
+174:             domain_dns_role >> hosted_zone
+175:             registered_domain >> hosted_zone
+176:             igw >> pub_a
+177:             igw >> pub_b
+178:             nat >> app_a
+179:             nat >> app_b
+180:             vpc >> pub_a
+181:             vpc >> pub_b
+182:             vpc >> app_a
+183:             vpc >> app_b
+184:             vpc >> db_a
+185:             vpc >> db_b
+186:             alb >> Edge(label="access logs") >> alb_logs
+187:             ec2 >> cloudwatch_logs >> cloudwatch
+188:             rds >> cloudwatch
+189:             alb >> cloudwatch
+190:             if context["bootstrap_present"]:
+191:                 tf_bootstrap = Rack("Terraform Root\ninfra/bootstrap")
+192:                 tf_bootstrap >> Edge(label="state foundation") >> alb_logs
+193:             if context["prod_present"]:
+194:                 tf_prod = Rack("Terraform Root\ninfra/envs/prod")
+195:                 github >> Edge(label="terraform plan/apply") >> tf_prod
+196:                 tf_prod >> vpc
+197:                 tf_prod >> ssm_params
+198:                 tf_prod >> secrets
+199:     finally:
+200:         os.chdir(previous_cwd)
+201:     dot_path = OUTPUT_DIR / f"{filename}.dot"
+202:     drawio_path = OUTPUT_DIR / f"{filename}.drawio"
+203:     _convert_dot_to_drawio(dot_path, drawio_path)
+204:     return filename
+205: def main() -> int:
+206:     generated = build_diagram()
+207:     print(f"Generated diagram artifacts under: {OUTPUT_DIR / generated}")
+208:     return 0
+209: if __name__ == "__main__":
+210:     raise SystemExit(main())
+````
+
+## File: docs/auxiliary/architecture-diagrams/requirements.txt
+````
+1: # Architecture diagram generation (SETUP.md)
+2: # Install: pip install -r requirements.txt
+3: # macOS: install pygraphviz separately with brew paths (see SETUP.md)
+4: 
+5: pygraphviz>=1.11
+6: diagrams>=0.25
+7: graphviz>=0.20
+8: graphviz2drawio>=1.1
+````
+
+## File: docs/dark-theme.css
+````css
+  1: * {
+  2:   margin: 0;
+  3:   padding: 0;
+  4:   box-sizing: border-box;
+  5: }
+  6: :root {
+  7:   --primary-color: #58a6ff;
+  8:   --primary-hover: #79c0ff;
+  9:   --bg-color: #0d1117;
+ 10:   --text-color: #c9d1d9;
+ 11:   --border-color: #30363d;
+ 12:   --code-bg: #161b22;
+ 13:   --nav-bg: #161b22;
+ 14:   --nav-shadow: rgba(0, 0, 0, 0.5);
+ 15:   --section-bg: #161b22;
+ 16:   --table-row-alt: #21262d;
+ 17:   --link-color: #58a6ff;
+ 18: }
+ 19: html {
+ 20:   scroll-behavior: smooth;
+ 21: }
+ 22: body {
+ 23:   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+ 24:   line-height: 1.6;
+ 25:   color: var(--text-color);
+ 26:   background-color: var(--bg-color);
+ 27:   padding-top: 80px;
+ 28: }
+ 29: .skip-link {
+ 30:   position: absolute;
+ 31:   left: -9999px;
+ 32:   z-index: 9999;
+ 33:   padding: 0.75rem 1rem;
+ 34:   background: var(--primary-color);
+ 35:   color: #fff;
+ 36:   text-decoration: none;
+ 37:   font-weight: 600;
+ 38: }
+ 39: .skip-link:focus {
+ 40:   left: 0;
+ 41:   top: 0;
+ 42:   position: fixed;
+ 43: }
+ 44: .navbar {
+ 45:   position: fixed;
+ 46:   top: 0;
+ 47:   left: 0;
+ 48:   right: 0;
+ 49:   background-color: var(--nav-bg);
+ 50:   border-bottom: 1px solid var(--border-color);
+ 51:   box-shadow: 0 2px 4px var(--nav-shadow);
+ 52:   z-index: 1000;
+ 53:   padding: 5px 20px;
+ 54: }
+ 55: .nav-container {
+ 56:   max-width: 1200px;
+ 57:   margin: 0 auto;
+ 58:   display: flex;
+ 59:   justify-content: space-between;
+ 60:   align-items: center;
+ 61: }
+ 62: .nav-logo {
+ 63:   font-size: 18px;
+ 64:   font-weight: 600;
+ 65:   color: var(--text-color);
+ 66:   text-decoration: none;
+ 67:   margin-right: 20px;
+ 68:   white-space: nowrap;
+ 69: }
+ 70: .nav-menu {
+ 71:   display: flex;
+ 72:   list-style: none;
+ 73:   gap: 10px;
+ 74:   align-items: center;
+ 75: }
+ 76: .nav-menu li {
+ 77:   display: flex;
+ 78:   align-items: center;
+ 79:   padding: 10px 12px;
+ 80: }
+ 81: .nav-menu a {
+ 82:   color: var(--text-color);
+ 83:   text-decoration: none;
+ 84:   font-size: 14px;
+ 85:   border-bottom: 2px solid transparent;
+ 86: }
+ 87: .nav-menu a:hover,
+ 88: .nav-menu a.active {
+ 89:   color: var(--primary-color);
+ 90:   border-bottom-color: var(--primary-color);
+ 91: }
+ 92: .mobile-menu-toggle {
+ 93:   display: none;
+ 94:   background: none;
+ 95:   border: none;
+ 96:   font-size: 24px;
+ 97:   cursor: pointer;
+ 98:   padding: 10px;
+ 99:   color: var(--text-color);
+100: }
+101: .theme-toggle {
+102:   background: none;
+103:   border: 1px solid var(--border-color);
+104:   border-radius: 6px;
+105:   color: var(--text-color);
+106:   cursor: pointer;
+107:   font-size: 20px;
+108:   padding: 4px 10px;
+109:   margin-left: 10px;
+110: }
+111: .theme-toggle .icon.hidden {
+112:   display: none;
+113: }
+114: .hero {
+115:   color: var(--text-color);
+116:   padding: 60px 20px 0 20px;
+117:   text-align: center;
+118: }
+119: .hero-content {
+120:   max-width: 1200px;
+121:   margin: 0 auto;
+122: }
+123: .hero h1 {
+124:   font-size: 2.5em;
+125:   margin-bottom: 20px;
+126:   font-weight: 600;
+127: }
+128: .hero p {
+129:   font-size: 1.2em;
+130:   margin-bottom: 30px;
+131: }
+132: .hero-banner {
+133:   max-width: 100%;
+134:   height: auto;
+135:   margin-top: 30px;
+136:   border-radius: 8px;
+137:   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+138:   filter: brightness(0.9);
+139: }
+140: section {
+141:   max-width: 1200px;
+142:   margin: 0 auto;
+143:   padding: 40px 20px 0 20px;
+144:   scroll-margin-top: 100px;
+145: }
+146: section h2 {
+147:   font-size: 2em;
+148:   margin-bottom: 20px;
+149:   padding-bottom: 10px;
+150:   border-bottom: 2px solid var(--border-color);
+151: }
+152: section h3 {
+153:   font-size: 1.5em;
+154:   margin-bottom: 15px;
+155: }
+156: .card {
+157:   background: var(--section-bg);
+158:   border: 1px solid var(--border-color);
+159:   border-radius: 6px;
+160:   padding: 20px;
+161:   margin-bottom: 20px;
+162:   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+163: }
+164: .doc-grid {
+165:   display: grid;
+166:   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+167:   gap: 20px;
+168:   margin-top: 20px;
+169: }
+170: ul, ol {
+171:   list-style-position: inside;
+172: }
+173: a {
+174:   color: var(--link-color);
+175:   text-decoration: none;
+176: }
+177: a:hover {
+178:   text-decoration: underline;
+179: }
+180: p {
+181:   margin-bottom: 15px;
+182: }
+183: code {
+184:   background-color: var(--code-bg);
+185:   padding: 2px 6px;
+186:   border-radius: 3px;
+187:   border: 1px solid var(--border-color);
+188:   color: #f85149;
+189: }
+190: pre {
+191:   background-color: var(--code-bg);
+192:   padding: 16px;
+193:   border-radius: 6px;
+194:   overflow-x: auto;
+195:   border: 1px solid var(--border-color);
+196: }
+197: pre code {
+198:   background: none;
+199:   padding: 0;
+200:   border: none;
+201:   color: var(--text-color);
+202: }
+203: footer {
+204:   background-color: var(--section-bg);
+205:   border-top: 1px solid var(--border-color);
+206:   padding: 30px 20px;
+207:   text-align: center;
+208:   color: #8b949e;
+209: }
+210: .scroll-to-top {
+211:   position: fixed;
+212:   bottom: 30px;
+213:   right: 30px;
+214:   width: 50px;
+215:   height: 50px;
+216:   border-radius: 50%;
+217:   background-color: rgba(88, 166, 255, 0.15);
+218:   border: 2px solid rgba(88, 166, 255, 0.3);
+219:   color: var(--primary-color);
+220:   cursor: pointer;
+221:   display: flex;
+222:   align-items: center;
+223:   justify-content: center;
+224:   z-index: 999;
+225:   opacity: 0;
+226:   visibility: hidden;
+227:   pointer-events: none;
+228:   transition: opacity 0.3s ease, visibility 0.3s ease;
+229: }
+230: .scroll-to-top.visible {
+231:   opacity: 1;
+232:   visibility: visible;
+233:   pointer-events: auto;
+234: }
+235: @media (max-width: 768px) {
+236:   .mobile-menu-toggle {
+237:     display: block;
+238:   }
+239:   .nav-menu {
+240:     position: fixed;
+241:     left: -100%;
+242:     top: 60px;
+243:     flex-direction: column;
+244:     background-color: var(--nav-bg);
+245:     width: 100%;
+246:     text-align: center;
+247:     transition: 0.3s;
+248:     padding: 20px 0;
+249:     border-bottom: 1px solid var(--border-color);
+250:   }
+251:   .nav-menu.active {
+252:     left: 0;
+253:   }
+254: }
+````
+
+## File: docs/index.html
+````html
+  1: <!DOCTYPE html>
+  2: <html lang="en">
+  3: <head>
+  4:   <meta charset="UTF-8">
+  5:   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  6:   <title>Dockerized Java App on EC2 - Documentation</title>
+  7:   <meta name="description" content="Project documentation for deploying Dockerized Java applications on AWS EC2, including architecture, deployment, operations, security, and ADRs.">
+  8:   <meta property="og:type" content="website">
+  9:   <meta property="og:title" content="Dockerized Java App on EC2 - Documentation">
+ 10:   <meta property="og:description" content="Production-shaped Dockerized Java deployment reference with Terraform IaC and GitHub Actions CI/CD.">
+ 11:   <meta property="og:image" content="https://github.com/talorlik/dockerized-java-app-on-ec2/raw/main/docs/header_banner.png">
+ 12:   <meta name="twitter:card" content="summary_large_image">
+ 13:   <meta name="twitter:title" content="Dockerized Java App on EC2 - Documentation">
+ 14:   <meta name="twitter:description" content="Architecture, deployment, operations, and security documentation for the project.">
+ 15:   <meta name="twitter:image" content="https://github.com/talorlik/dockerized-java-app-on-ec2/raw/main/docs/header_banner.png">
+ 16:   <link rel="icon" type="image/x-icon" href="favicon.ico">
+ 17:   <link id="theme-stylesheet" rel="stylesheet" href="light-theme.css">
+ 18: </head>
+ 19: <body>
+ 20:   <a href="#main-content" class="skip-link">Skip to main content</a>
+ 21:   <nav class="navbar">
+ 22:     <div class="nav-container">
+ 23:       <a href="#hero" class="nav-logo">Dockerized Java App Docs</a>
+ 24:       <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle navigation menu">☰</button>
+ 25:       <ul class="nav-menu" id="navMenu">
+ 26:         <li><a href="#overview">Overview</a></li>
+ 27:         <li><a href="#getting-started">Getting Started</a></li>
+ 28:         <li><a href="#architecture">Architecture</a></li>
+ 29:         <li><a href="#documentation">Documentation</a></li>
+ 30:         <li><a href="#operations">Operations</a></li>
+ 31:         <li><a href="#security">Security</a></li>
+ 32:         <li><a href="#repository">Repository</a></li>
+ 33:         <li>
+ 34:           <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
+ 35:             <span id="sunIcon" class="icon hidden">☀️</span>
+ 36:             <span id="moonIcon" class="icon">🌙</span>
+ 37:           </button>
+ 38:         </li>
+ 39:       </ul>
+ 40:     </div>
+ 41:   </nav>
+ 42:   <main id="main-content">
+ 43:     <section id="hero" class="hero">
+ 44:       <h1>Dockerized Java App on EC2</h1>
+ 45:       <p>
+ 46:         Production-shaped reference implementation for deploying Dockerized Java
+ 47:         applications on EC2 Auto Scaling behind an ALB, with RDS MySQL,
+ 48:         Terraform infrastructure, and GitHub Actions delivery workflows. The
+ 49:         signup app included here is a sample workload.
+ 50:       </p>
+ 51:       <img src="header_banner.png" alt="Dockerized Java app architecture banner" class="hero-banner">
+ 52:     </section>
+ 53:     <section id="overview">
+ 54:       <h2>Overview</h2>
+ 55:       <div class="doc-grid">
+ 56:         <article class="card">
+ 57:           <h3>What This Project Includes</h3>
+ 58:           <ul>
+ 59:             <li>Spring Boot backend with JWT auth, RBAC, and Flyway migrations</li>
+ 60:             <li>Nginx frontend container proxying <code>/api/*</code> to backend</li>
+ 61:             <li>Private RDS MySQL (central shared DB) with stateless EC2 compute</li>
+ 62:             <li>Terraform-managed AWS foundation across deployment and domain accounts</li>
+ 63:             <li>GitHub Actions OIDC delivery with ASG Instance Refresh rollout</li>
+ 64:           </ul>
+ 65:         </article>
+ 66:         <article class="card">
+ 67:           <h3>Target Runtime Topology</h3>
+ 68:           <p>
+ 69:             Ingress path: Internet -&gt; Route53 alias -&gt; ALB HTTPS listener -&gt;
+ 70:             EC2 ASG private subnets -&gt; Docker Compose frontend/backend -&gt; RDS MySQL.
+ 71:           </p>
+ 72:           <p>
+ 73:             Primary endpoint: <code>https://java.talorlik.com</code>.
+ 74:             Operations and architecture details are aligned with
+ 75:             <code>PROJECT_OVERVIEW.md</code>, PRD, and Technical Requirements docs.
+ 76:           </p>
+ 77:         </article>
+ 78:       </div>
+ 79:     </section>
+ 80:     <section id="getting-started">
+ 81:       <h2>Getting Started</h2>
+ 82:       <div class="doc-grid">
+ 83:         <article class="card">
+ 84:           <h3>Prerequisites Checklist</h3>
+ 85:           <ul>
+ 86:             <li>DEPLOYMENT account for ALB, EC2/ASG, RDS, ECR, IAM, Secrets Manager, and ACM</li>
+ 87:             <li>DOMAIN account (or same account) hosting Route53 zone for <code>talorlik.com</code></li>
+ 88:             <li><code>DEPLOYMENT_ROLE_ARN</code> with GitHub OIDC trust configured</li>
+ 89:             <li><code>DOMAIN_ROUTE53_ROLE_ARN</code> allowing DNS record updates (when cross-account)</li>
+ 90:             <li>ACM certificate in DEPLOYMENT account for <code>java.talorlik.com</code></li>
+ 91:             <li>GitHub variables: <code>AWS_REGION</code>, <code>DEPLOYMENT_ACCOUNT_ID</code>, <code>DOMAIN_ACCOUNT_ID</code>, <code>HOSTED_ZONE_ID</code></li>
+ 92:             <li>GitHub secrets: <code>ACM_CERTIFICATE_ARN</code>, <code>DEPLOYMENT_ROLE_ARN</code>, <code>DOMAIN_ROUTE53_ROLE_ARN</code></li>
+ 93:             <li>GitHub Environment named <code>prod</code> for apply/destroy workflows</li>
+ 94:           </ul>
+ 95:         </article>
+ 96:         <article class="card">
+ 97:           <h3>Deploy From Scratch</h3>
+ 98:           <ol>
+ 99:             <li>Complete one-time prerequisites from <code>README.md</code>: DEPLOYMENT account, DOMAIN account role chain, ACM cert, GitHub vars/secrets, and <code>prod</code> environment.</li>
+100:             <li>Bootstrap remote Terraform state in <code>infra/bootstrap</code> and copy the backend block output into <code>infra/envs/prod/backend.tf</code>.</li>
+101:             <li>Optionally run <code>infra-plan.yml</code>, then run <code>infra-apply.yml</code> to provision VPC, ALB, ASG, RDS, ECR, IAM, Route53, and observability resources.</li>
+102:             <li>Run <code>app-deploy.yml</code> to execute CI gates, push SHA-tagged images to ECR, update SSM release pointers, and trigger ASG instance refresh.</li>
+103:             <li>Retrieve first admin credentials from Secrets Manager and sign in.</li>
+104:           </ol>
+105:         </article>
+106:         <article class="card">
+107:           <h3>Deploy Commands</h3>
+108:           <pre><code># 1) Bootstrap state (local, one-shot)
+109: cd infra/bootstrap
+110: export AWS_REGION=us-east-1
+111: terraform init
+112: terraform apply -var aws_region=us-east-1 -var state_bucket_name="java-app-tfstate-&lt;DEPLOYMENT_ACCOUNT_ID&gt;-us-east-1"
+113: terraform output backend_block_example
+114: # 2) (Optional) Terraform plan workflow
+115: gh workflow run infra-plan.yml
+116: gh run watch
+117: # 3) Apply infrastructure
+118: gh workflow run infra-apply.yml
+119: gh run watch
+120: # 4) Deploy app images + refresh ASG
+121: gh workflow run app-deploy.yml
+122: gh run watch</code></pre>
+123:         </article>
+124:         <article class="card">
+125:           <h3>Destroy Stack (Reverse Order)</h3>
+126:           <p>
+127:             Destroy follows the README sequence. Both workflow-based destroy paths require
+128:             the exact confirmation value <code>DESTROY</code>.
+129:           </p>
+130:           <pre><code># 1) Tear down application layer
+131: gh workflow run app-destroy.yml -f confirm=DESTROY
+132: gh run watch
+133: # 2) Tear down production infrastructure
+134: gh workflow run infra-destroy.yml -f confirm=DESTROY -f run_app_cleanup=true
+135: gh run watch</code></pre>
+136:           <p>
+137:             Optional: remove <code>infra/bootstrap</code> resources only when decommissioning
+138:             the project completely.
+139:           </p>
+140:         </article>
+141:       </div>
+142:     </section>
+143:     <section id="architecture">
+144:       <h2>Architecture</h2>
+145:       <div class="card">
+146:         <p>
+147:           Route53 aliases <code>java.talorlik.com</code> to an internet-facing ALB.
+148:           The ALB forwards to EC2 instances in an Auto Scaling Group, where
+149:           frontend and backend containers run via Docker Compose. The backend
+150:           connects to private RDS MySQL, and secrets are sourced from AWS
+151:           Secrets Manager.
+152:         </p>
+153:       </div>
+154:       <div class="card">
+155:         <h3>Key Paths</h3>
+156:         <ul>
+157:           <li><code>app/backend/</code> - Spring Boot application</li>
+158:           <li><code>app/frontend/</code> - static frontend and Nginx config</li>
+159:           <li><code>app/docker/</code> - local and prod compose files</li>
+160:           <li><code>infra/envs/prod/</code> - production Terraform environment</li>
+161:           <li><code>.github/workflows/</code> - CI/CD pipelines</li>
+162:         </ul>
+163:       </div>
+164:     </section>
+165:     <section id="documentation">
+166:       <h2>Documentation</h2>
+167:       <div class="doc-grid">
+168:         <article class="card">
+169:           <h3>Operator Guides</h3>
+170:           <ul>
+171:             <li><a href="auxiliary/operations_guide/00-prerequisites.md">00 - Prerequisites</a></li>
+172:             <li><a href="auxiliary/operations_guide/01-bootstrap-state.md">01 - Bootstrap State</a></li>
+173:             <li><a href="auxiliary/operations_guide/02-domain-account-dns.md">02 - Domain Account DNS</a></li>
+174:             <li><a href="auxiliary/operations_guide/03-deployment.md">03 - Deployment</a></li>
+175:             <li><a href="auxiliary/operations_guide/04-operations.md">04 - Operations</a></li>
+176:             <li><a href="auxiliary/operations_guide/05-security-model.md">05 - Security Model</a></li>
+177:           </ul>
+178:         </article>
+179:         <article class="card">
+180:           <h3>Planning Documents</h3>
+181:           <ul>
+182:             <li><a href="auxiliary/planning/PROJECT_OVERVIEW.md">Project Overview</a></li>
+183:             <li><a href="auxiliary/planning/PRODUCT_REQUIREMENTS_DOCUMENT.md">Product Requirements</a></li>
+184:             <li><a href="auxiliary/planning/TECHNICAL_REQUIREMENTS_REFERENCE.md">Technical Requirements</a></li>
+185:             <li><a href="auxiliary/planning/ENGINEERING_EXECUTION_BACKLOG.md">Engineering Backlog</a></li>
+186:             <li><a href="auxiliary/planning/INITIAL_HL_DESCRIPTION.md">Initial High-Level Description</a></li>
+187:           </ul>
+188:         </article>
+189:         <article class="card">
+190:           <h3>Architecture Decision Records</h3>
+191:           <ul>
+192:             <li><a href="auxiliary/adr/0001-frontend-stack.md">ADR 0001 - Frontend Stack</a></li>
+193:             <li><a href="auxiliary/adr/0002-auth-model.md">ADR 0002 - Auth Model</a></li>
+194:             <li><a href="auxiliary/adr/0003-waf.md">ADR 0003 - WAF</a></li>
+195:             <li><a href="auxiliary/adr/0004-ubuntu-resolution.md">ADR 0004 - Ubuntu Resolution</a></li>
+196:             <li><a href="auxiliary/adr/0005-secret-rotation.md">ADR 0005 - Secret Rotation</a></li>
+197:             <li><a href="auxiliary/adr/0006-provider-account-model.md">ADR 0006 - Provider Account Model</a></li>
+198:           </ul>
+199:         </article>
+200:       </div>
+201:     </section>
+202:     <section id="operations">
+203:       <h2>Operations</h2>
+204:       <div class="doc-grid">
+205:         <article class="card">
+206:           <h3>Release Workflow</h3>
+207:           <ul>
+208:             <li><code>ci.yml</code> gates backend tests, compose smoke, e2e, and Terraform checks</li>
+209:             <li><code>infra-plan.yml</code> produces plan artifacts for infrastructure changes</li>
+210:             <li><code>infra-apply.yml</code> applies production infrastructure and config object wiring</li>
+211:             <li><code>app-deploy.yml</code> publishes immutable SHA image tags and rolls ASG safely</li>
+212:             <li><code>app-destroy.yml</code> and <code>infra-destroy.yml</code> execute controlled teardown</li>
+213:           </ul>
+214:         </article>
+215:         <article class="card">
+216:           <h3>Notes</h3>
+217:           <p>
+218:             Image tags are release-specific. The deployment model updates SSM
+219:             image tag parameters and performs launch-before-terminate refreshes.
+220:           </p>
+221:           <p>
+222:             Health checks are performed after deployment to verify application
+223:             readiness.
+224:           </p>
+225:         </article>
+226:       </div>
+227:     </section>
+228:     <section id="security">
+229:       <h2>Security</h2>
+230:       <div class="card">
+231:         <ul>
+232:           <li>No public RDS access; DB lives in private subnets only</li>
+233:           <li>EC2 access uses SSM Session Manager, not SSH ingress</li>
+234:           <li>Secrets are stored in Secrets Manager, never committed in repo</li>
+235:           <li>WAF is attached to ALB with managed rule groups and rate limiting</li>
+236:           <li>IMDSv2 and least-privilege IAM are part of the baseline model</li>
+237:         </ul>
+238:       </div>
+239:     </section>
+240:     <section id="repository">
+241:       <h2>Repository</h2>
+242:       <div class="card">
+243:         <p>
+244:           GitHub: <a href="https://github.com/talorlik/dockerized-java-app-on-ec2" target="_blank" rel="noopener noreferrer">talorlik/dockerized-java-app-on-ec2</a>
+245:         </p>
+246:         <p>
+247:           Root README: <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/README.md" target="_blank" rel="noopener noreferrer">README.md</a>
+248:         </p>
+249:       </div>
+250:     </section>
+251:   </main>
+252:   <footer>
+253:     <p><strong>Dockerized Java App Documentation</strong></p>
+254:     <p>Copyright (c) Tal Orlik</p>
+255:   </footer>
+256:   <button id="scrollToTopButton" class="scroll-to-top" aria-label="Scroll to top" title="Scroll to top">
+257:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+258:       <path d="M18 15l-6-6-6 6"></path>
+259:     </svg>
+260:   </button>
+261:   <script src="main.js"></script>
+262: </body>
+263: </html>
+````
+
+## File: docs/light-theme.css
+````css
+  1: * {
+  2:   margin: 0;
+  3:   padding: 0;
+  4:   box-sizing: border-box;
+  5: }
+  6: :root {
+  7:   --primary-color: #0366d6;
+  8:   --primary-hover: #0256c2;
+  9:   --bg-color: #ffffff;
+ 10:   --text-color: #24292e;
+ 11:   --border-color: #e1e4e8;
+ 12:   --code-bg: #f6f8fa;
+ 13:   --nav-bg: #ffffff;
+ 14:   --nav-shadow: rgba(0, 0, 0, 0.1);
+ 15:   --section-bg: #fafbfc;
+ 16:   --table-row-alt: #f6f8fa;
+ 17:   --link-color: #0366d6;
+ 18: }
+ 19: html {
+ 20:   scroll-behavior: smooth;
+ 21: }
+ 22: body {
+ 23:   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+ 24:   line-height: 1.6;
+ 25:   color: var(--text-color);
+ 26:   background-color: var(--bg-color);
+ 27:   padding-top: 80px;
+ 28: }
+ 29: .skip-link {
+ 30:   position: absolute;
+ 31:   left: -9999px;
+ 32:   z-index: 9999;
+ 33:   padding: 0.75rem 1rem;
+ 34:   background: var(--primary-color);
+ 35:   color: #fff;
+ 36:   text-decoration: none;
+ 37:   font-weight: 600;
+ 38: }
+ 39: .skip-link:focus {
+ 40:   left: 0;
+ 41:   top: 0;
+ 42:   position: fixed;
+ 43: }
+ 44: .navbar {
+ 45:   position: fixed;
+ 46:   top: 0;
+ 47:   left: 0;
+ 48:   right: 0;
+ 49:   background-color: var(--nav-bg);
+ 50:   border-bottom: 1px solid var(--border-color);
+ 51:   box-shadow: 0 2px 4px var(--nav-shadow);
+ 52:   z-index: 1000;
+ 53:   padding: 5px 20px;
+ 54: }
+ 55: .nav-container {
+ 56:   max-width: 1200px;
+ 57:   margin: 0 auto;
+ 58:   display: flex;
+ 59:   justify-content: space-between;
+ 60:   align-items: center;
+ 61: }
+ 62: .nav-logo {
+ 63:   font-size: 18px;
+ 64:   font-weight: 600;
+ 65:   color: var(--text-color);
+ 66:   text-decoration: none;
+ 67:   margin-right: 20px;
+ 68:   white-space: nowrap;
+ 69: }
+ 70: .nav-menu {
+ 71:   display: flex;
+ 72:   list-style: none;
+ 73:   gap: 10px;
+ 74:   align-items: center;
+ 75: }
+ 76: .nav-menu li {
+ 77:   display: flex;
+ 78:   align-items: center;
+ 79:   padding: 10px 12px;
+ 80: }
+ 81: .nav-menu a {
+ 82:   color: var(--text-color);
+ 83:   text-decoration: none;
+ 84:   font-size: 14px;
+ 85:   border-bottom: 2px solid transparent;
+ 86: }
+ 87: .nav-menu a:hover,
+ 88: .nav-menu a.active {
+ 89:   color: var(--primary-color);
+ 90:   border-bottom-color: var(--primary-color);
+ 91: }
+ 92: .mobile-menu-toggle {
+ 93:   display: none;
+ 94:   background: none;
+ 95:   border: none;
+ 96:   font-size: 24px;
+ 97:   cursor: pointer;
+ 98:   padding: 10px;
+ 99:   color: var(--text-color);
+100: }
+101: .theme-toggle {
+102:   background: none;
+103:   border: 1px solid var(--border-color);
+104:   border-radius: 6px;
+105:   color: var(--text-color);
+106:   cursor: pointer;
+107:   font-size: 20px;
+108:   padding: 4px 10px;
+109:   margin-left: 10px;
+110: }
+111: .theme-toggle .icon.hidden {
+112:   display: none;
+113: }
+114: .hero {
+115:   color: var(--text-color);
+116:   padding: 60px 20px 0 20px;
+117:   text-align: center;
+118: }
+119: .hero-content {
+120:   max-width: 1200px;
+121:   margin: 0 auto;
+122: }
+123: .hero h1 {
+124:   font-size: 2.5em;
+125:   margin-bottom: 20px;
+126:   font-weight: 600;
+127: }
+128: .hero p {
+129:   font-size: 1.2em;
+130:   margin-bottom: 30px;
+131: }
+132: .hero-banner {
+133:   max-width: 100%;
+134:   height: auto;
+135:   margin-top: 30px;
+136:   border-radius: 8px;
+137:   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+138: }
+139: section {
+140:   max-width: 1200px;
+141:   margin: 0 auto;
+142:   padding: 40px 20px 0 20px;
+143:   scroll-margin-top: 100px;
+144: }
+145: section h2 {
+146:   font-size: 2em;
+147:   margin-bottom: 20px;
+148:   padding-bottom: 10px;
+149:   border-bottom: 2px solid var(--border-color);
+150: }
+151: section h3 {
+152:   font-size: 1.5em;
+153:   margin-bottom: 15px;
+154: }
+155: .card {
+156:   background: var(--bg-color);
+157:   border: 1px solid var(--border-color);
+158:   border-radius: 6px;
+159:   padding: 20px;
+160:   margin-bottom: 20px;
+161:   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+162: }
+163: .doc-grid {
+164:   display: grid;
+165:   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+166:   gap: 20px;
+167:   margin-top: 20px;
+168: }
+169: ul, ol {
+170:   list-style-position: inside;
+171: }
+172: a {
+173:   color: var(--link-color);
+174:   text-decoration: none;
+175: }
+176: a:hover {
+177:   text-decoration: underline;
+178: }
+179: p {
+180:   margin-bottom: 15px;
+181: }
+182: code {
+183:   background-color: var(--code-bg);
+184:   padding: 2px 6px;
+185:   border-radius: 3px;
+186:   border: 1px solid var(--border-color);
+187:   color: #d73a49;
+188: }
+189: pre {
+190:   background-color: var(--code-bg);
+191:   padding: 16px;
+192:   border-radius: 6px;
+193:   overflow-x: auto;
+194:   border: 1px solid var(--border-color);
+195: }
+196: pre code {
+197:   background: none;
+198:   padding: 0;
+199:   border: none;
+200:   color: var(--text-color);
+201: }
+202: footer {
+203:   background-color: var(--section-bg);
+204:   border-top: 1px solid var(--border-color);
+205:   padding: 30px 20px;
+206:   text-align: center;
+207:   color: #586069;
+208: }
+209: .scroll-to-top {
+210:   position: fixed;
+211:   bottom: 30px;
+212:   right: 30px;
+213:   width: 50px;
+214:   height: 50px;
+215:   border-radius: 50%;
+216:   background-color: rgba(3, 102, 214, 0.15);
+217:   border: 2px solid rgba(3, 102, 214, 0.3);
+218:   color: var(--primary-color);
+219:   cursor: pointer;
+220:   display: flex;
+221:   align-items: center;
+222:   justify-content: center;
+223:   z-index: 999;
+224:   opacity: 0;
+225:   visibility: hidden;
+226:   pointer-events: none;
+227:   transition: opacity 0.3s ease, visibility 0.3s ease;
+228: }
+229: .scroll-to-top.visible {
+230:   opacity: 1;
+231:   visibility: visible;
+232:   pointer-events: auto;
+233: }
+234: @media (max-width: 768px) {
+235:   .mobile-menu-toggle {
+236:     display: block;
+237:   }
+238:   .nav-menu {
+239:     position: fixed;
+240:     left: -100%;
+241:     top: 60px;
+242:     flex-direction: column;
+243:     background-color: var(--nav-bg);
+244:     width: 100%;
+245:     text-align: center;
+246:     transition: 0.3s;
+247:     padding: 20px 0;
+248:     border-bottom: 1px solid var(--border-color);
+249:   }
+250:   .nav-menu.active {
+251:     left: 0;
+252:   }
+253: }
+````
+
+## File: docs/main.js
+````javascript
+  1: // Theme management
+  2: const themeStylesheet = document.getElementById('theme-stylesheet');
+  3: const themeToggle = document.getElementById('themeToggle');
+  4: const sunIcon = document.getElementById('sunIcon');
+  5: const moonIcon = document.getElementById('moonIcon');
+  6: const currentTheme = localStorage.getItem('theme') || 'light';
+  7: function setTheme(theme) {
+  8:   if (theme === 'dark') {
+  9:     themeStylesheet.href = 'dark-theme.css';
+ 10:     sunIcon.classList.remove('hidden');
+ 11:     moonIcon.classList.add('hidden');
+ 12:     themeToggle.setAttribute('aria-label', 'Switch to light theme');
+ 13:     themeToggle.setAttribute('title', 'Switch to light theme');
+ 14:     localStorage.setItem('theme', 'dark');
+ 15:   } else {
+ 16:     themeStylesheet.href = 'light-theme.css';
+ 17:     sunIcon.classList.add('hidden');
+ 18:     moonIcon.classList.remove('hidden');
+ 19:     themeToggle.setAttribute('aria-label', 'Switch to dark theme');
+ 20:     themeToggle.setAttribute('title', 'Switch to dark theme');
+ 21:     localStorage.setItem('theme', 'light');
+ 22:   }
+ 23: }
+ 24: setTheme(currentTheme);
+ 25: themeToggle.addEventListener('click', () => {
+ 26:   const newTheme = themeStylesheet.href.includes('dark-theme.css') ? 'light' : 'dark';
+ 27:   setTheme(newTheme);
+ 28: });
+ 29: // Mobile menu toggle
+ 30: const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+ 31: const navMenu = document.getElementById('navMenu');
+ 32: mobileMenuToggle.addEventListener('click', () => {
+ 33:   navMenu.classList.toggle('active');
+ 34: });
+ 35: // Close mobile menu when clicking on a link
+ 36: const navLinks = document.querySelectorAll('.nav-menu a');
+ 37: navLinks.forEach((link) => {
+ 38:   link.addEventListener('click', () => {
+ 39:     navMenu.classList.remove('active');
+ 40:   });
+ 41: });
+ 42: // Active section highlighting
+ 43: const sections = document.querySelectorAll('section[id]');
+ 44: const navLinksArray = Array.from(navLinks);
+ 45: function highlightActiveSection() {
+ 46:   const scrollY = window.pageYOffset;
+ 47:   sections.forEach((section) => {
+ 48:     const sectionHeight = section.offsetHeight;
+ 49:     const sectionTop = section.offsetTop - 150;
+ 50:     const sectionId = section.getAttribute('id');
+ 51:     if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
+ 52:       navLinksArray.forEach((link) => {
+ 53:         link.classList.remove('active');
+ 54:         if (link.getAttribute('href') === `#${sectionId}`) {
+ 55:           link.classList.add('active');
+ 56:         }
+ 57:       });
+ 58:     }
+ 59:   });
+ 60: }
+ 61: window.addEventListener('scroll', highlightActiveSection);
+ 62: window.addEventListener('load', highlightActiveSection);
+ 63: // Scroll to top button
+ 64: function initScrollToTop() {
+ 65:   const scrollToTopButton = document.getElementById('scrollToTopButton');
+ 66:   if (!scrollToTopButton) {
+ 67:     return;
+ 68:   }
+ 69:   function checkScroll() {
+ 70:     if (window.pageYOffset > 100 || document.documentElement.scrollTop > 100) {
+ 71:       scrollToTopButton.classList.add('visible');
+ 72:     } else {
+ 73:       scrollToTopButton.classList.remove('visible');
+ 74:     }
+ 75:   }
+ 76:   checkScroll();
+ 77:   window.addEventListener('scroll', checkScroll);
+ 78:   scrollToTopButton.addEventListener('click', (e) => {
+ 79:     e.preventDefault();
+ 80:     window.scrollTo({
+ 81:       top: 0,
+ 82:       behavior: 'smooth',
+ 83:     });
+ 84:   });
+ 85: }
+ 86: if (document.readyState === 'loading') {
+ 87:   document.addEventListener('DOMContentLoaded', initScrollToTop);
+ 88: } else {
+ 89:   initScrollToTop();
+ 90: }
+ 91: // Smooth scroll for anchor links
+ 92: document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+ 93:   anchor.addEventListener('click', function (e) {
+ 94:     e.preventDefault();
+ 95:     const target = document.querySelector(this.getAttribute('href'));
+ 96:     if (target) {
+ 97:       target.scrollIntoView({
+ 98:         behavior: 'smooth',
+ 99:         block: 'start',
+100:       });
+101:     }
+102:   });
+103: });
 ````
 
 ## File: infra/bootstrap/main.tf
@@ -4182,66 +4091,196 @@ repomix.config.json
 10: *.gz binary
 ````
 
-## File: .github/workflows/infra-apply.yml
+## File: repomix.config.json
+````json
+ 1: {
+ 2:   "$schema": "https://repomix.com/schemas/latest/schema.json",
+ 3:   "input": {
+ 4:     "maxFileSize": 52428800,
+ 5:     "instructionFilePath": "repomix-instruction.md"
+ 6:   },
+ 7:   "output": {
+ 8:     "filePath": "repomix-output.md",
+ 9:     "style": "markdown",
+10:     "parsableStyle": false,
+11:     "fileSummary": true,
+12:     "directoryStructure": true,
+13:     "files": true,
+14:     "removeComments": false,
+15:     "removeEmptyLines": true,
+16:     "compress": false,
+17:     "topFilesLength": 15,
+18:     "showLineNumbers": true,
+19:     "truncateBase64": false,
+20:     "copyToClipboard": false,
+21:     "includeFullDirectoryStructure": true,
+22:     "tokenCountTree": false,
+23:     "git": {
+24:       "sortByChanges": true,
+25:       "sortByChangesMaxCommits": 100,
+26:       "includeDiffs": false,
+27:       "includeLogs": false,
+28:       "includeLogsCount": 50
+29:     }
+30:   },
+31:   "include": [],
+32:   "ignore": {
+33:     "useGitignore": true,
+34:     "useDotIgnore": true,
+35:     "useDefaultPatterns": true,
+36:     "customPatterns": []
+37:   },
+38:   "security": {
+39:     "enableSecurityCheck": true
+40:   },
+41:   "tokenCount": {
+42:     "encoding": "o200k_base"
+43:   }
+44: }
+````
+
+## File: .github/workflows/app-destroy.yml
 ````yaml
- 1: name: infra-apply
- 2: on:
- 3:   workflow_dispatch:
- 4: permissions:
- 5:   id-token: write
- 6:   contents: read
- 7: concurrency:
- 8:   group: infra-apply
- 9:   cancel-in-progress: false
-10: jobs:
-11:   apply:
-12:     runs-on: ubuntu-latest
-13:     environment: prod
-14:     steps:
-15:       - uses: actions/checkout@v4
-16:       - uses: aws-actions/configure-aws-credentials@v4
-17:         with:
-18:           role-to-assume: ${{ secrets.DEPLOYMENT_ROLE_ARN }}
-19:           aws-region: ${{ vars.AWS_REGION }}
-20:           role-session-name: gha-infra-apply
-21:       - uses: hashicorp/setup-terraform@v3
-22:         with:
-23:           terraform_version: 1.9.8
-24:       - name: init
-25:         working-directory: infra/envs/prod
-26:         run: |
-27:           terraform init \
-28:             -backend-config="bucket=java-app-tfstate-${{ vars.DEPLOYMENT_ACCOUNT_ID }}-${{ vars.AWS_REGION }}" \
-29:             -backend-config="region=${{ vars.AWS_REGION }}"
-30:       - name: plan
-31:         working-directory: infra/envs/prod
-32:         env:
-33:           TF_VAR_aws_region: ${{ vars.AWS_REGION }}
-34:           TF_VAR_deployment_account_id: ${{ vars.DEPLOYMENT_ACCOUNT_ID }}
-35:           TF_VAR_domain_account_id: ${{ vars.DOMAIN_ACCOUNT_ID }}
-36:           TF_VAR_domain_account_route53_role_arn: ${{ secrets.DOMAIN_ROUTE53_ROLE_ARN }}
-37:           TF_VAR_hosted_zone_id: ${{ vars.HOSTED_ZONE_ID }}
-38:           TF_VAR_acm_certificate_arn: ${{ secrets.ACM_CERTIFICATE_ARN }}
-39:         run: terraform plan -input=false -out=tfplan
-40:       - name: apply
-41:         working-directory: infra/envs/prod
-42:         run: terraform apply -input=false -auto-approve tfplan
-43:       - name: outputs
-44:         working-directory: infra/envs/prod
-45:         run: terraform output -no-color
-46:       - name: Upload compose file to S3 (compose-object pointer)
-47:         env:
-48:           AWS_REGION: ${{ vars.AWS_REGION }}
-49:         run: |
-50:           BUCKET="java-app-prod-config-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
-51:           # Best-effort - bucket may already exist from a prior run.
-52:           aws s3api create-bucket --bucket "$BUCKET" --region "$AWS_REGION" 2>/dev/null || true
-53:           aws s3api put-public-access-block --bucket "$BUCKET" \
-54:             --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
-55:           aws s3 cp app/docker/docker-compose.prod.yml "s3://$BUCKET/docker-compose.prod.yml"
-56:           aws ssm put-parameter --name "/java-app/prod/compose-object" \
-57:             --type String --overwrite \
-58:             --value "s3://$BUCKET/docker-compose.prod.yml"
+  1: ###############################################################################
+  2: # app-destroy
+  3: #
+  4: # Tears down only the application-layer artifacts (ECR images, ASG instances,
+  5: # SSM release pointers, S3 compose object). Leaves the underlying
+  6: # infrastructure intact so a fresh deploy can come up over the same VPC/ALB/RDS.
+  7: #
+  8: # Sequence:
+  9: #   1. Confirm the user typed the destroy phrase exactly.
+ 10: #   2. Set the ASG min/desired/max to 0 and wait until in-service count is 0.
+ 11: #      This stops the running containers without churning the launch template.
+ 12: #   3. Reset the three SSM release pointers to "bootstrap" so a future
+ 13: #      instance launch won't try to pull a deleted image tag.
+ 14: #   4. Delete the docker-compose.prod.yml S3 object referenced by the
+ 15: #      compose-object SSM parameter.
+ 16: #   5. Empty both ECR repositories (delete every image / image-index in
+ 17: #      `java-app/backend` and `java-app/frontend`).
+ 18: #
+ 19: # Use `infra-destroy.yml` afterwards to remove the underlying infrastructure
+ 20: # itself.
+ 21: ###############################################################################
+ 22: name: app-destroy
+ 23: on:
+ 24:   workflow_dispatch:
+ 25:     inputs:
+ 26:       confirm:
+ 27:         description: 'Type DESTROY (uppercase) to confirm'
+ 28:         required: true
+ 29:         default: ''
+ 30: permissions:
+ 31:   id-token: write
+ 32:   contents: read
+ 33: concurrency:
+ 34:   group: app-destroy
+ 35:   cancel-in-progress: false
+ 36: jobs:
+ 37:   destroy:
+ 38:     name: tear down app layer
+ 39:     runs-on: ubuntu-latest
+ 40:     environment: prod   # forces the environment-protection rule (manual approval)
+ 41:     env:
+ 42:       AWS_PAGER: ""
+ 43:     steps:
+ 44:       - name: Validate confirmation phrase
+ 45:         run: |
+ 46:           if [ "${{ github.event.inputs.confirm }}" != "DESTROY" ]; then
+ 47:             echo "::error::confirm input must be exactly 'DESTROY'."
+ 48:             exit 1
+ 49:           fi
+ 50:       - uses: actions/checkout@v4
+ 51:       # Ensures `aws` is on PATH. GitHub-hosted ubuntu-latest already ships
+ 52:       # AWS CLI v2; nektos/act's default medium image does not. Idempotent.
+ 53:       - name: Ensure AWS CLI present
+ 54:         shell: bash
+ 55:         run: |
+ 56:           set -euo pipefail
+ 57:           if command -v aws >/dev/null 2>&1; then
+ 58:             aws --version
+ 59:             exit 0
+ 60:           fi
+ 61:           tmp=$(mktemp -d)
+ 62:           curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "$tmp/awscliv2.zip"
+ 63:           unzip -q "$tmp/awscliv2.zip" -d "$tmp"
+ 64:           sudo "$tmp/aws/install" --update
+ 65:           aws --version
+ 66:       - uses: aws-actions/configure-aws-credentials@v4
+ 67:         with:
+ 68:           role-to-assume: ${{ secrets.DEPLOYMENT_ROLE_ARN }}
+ 69:           aws-region: ${{ vars.AWS_REGION }}
+ 70:           role-session-name: gha-app-destroy
+ 71:       # -------------------------------------------------------------------
+ 72:       # 1. Resolve ASG name (deterministic in this stack, but follow the
+ 73:       #    same Tags-based lookup the deploy workflow uses).
+ 74:       # -------------------------------------------------------------------
+ 75:       - id: asg
+ 76:         name: Resolve ASG name
+ 77:         run: |
+ 78:           NAME=$(aws autoscaling describe-auto-scaling-groups \
+ 79:             --query "AutoScalingGroups[?Tags[?Key=='Project' && Value=='java-app'] && Tags[?Key=='Environment' && Value=='prod']].AutoScalingGroupName | [0]" \
+ 80:             --output text)
+ 81:           if [ "$NAME" = "None" ] || [ -z "$NAME" ]; then
+ 82:             NAME="java-app-prod-asg"
+ 83:           fi
+ 84:           echo "name=$NAME" >> "$GITHUB_OUTPUT"
+ 85:       # -------------------------------------------------------------------
+ 86:       # 2. Scale ASG to 0 and wait for instances to drain.
+ 87:       # -------------------------------------------------------------------
+ 88:       - name: Scale ASG to 0
+ 89:         run: |
+ 90:           aws autoscaling update-auto-scaling-group \
+ 91:             --auto-scaling-group-name "${{ steps.asg.outputs.name }}" \
+ 92:             --min-size 0 --desired-capacity 0 --max-size 0
+ 93:       - name: Wait for ASG to drain
+ 94:         run: |
+ 95:           for i in $(seq 1 60); do
+ 96:             COUNT=$(aws autoscaling describe-auto-scaling-groups \
+ 97:               --auto-scaling-group-names "${{ steps.asg.outputs.name }}" \
+ 98:               --query "AutoScalingGroups[0].Instances | length(@)" \
+ 99:               --output text)
+100:             echo "in-service instances: $COUNT"
+101:             if [ "$COUNT" = "0" ]; then exit 0; fi
+102:             sleep 15
+103:           done
+104:           echo "::error::timed out waiting for ASG to drain"
+105:           exit 1
+106:       # -------------------------------------------------------------------
+107:       # 3. Reset release pointers so a re-scale doesn't pull a deleted tag.
+108:       # -------------------------------------------------------------------
+109:       - name: Reset SSM release pointers to 'bootstrap'
+110:         run: |
+111:           for p in /java-app/prod/backend-image-tag /java-app/prod/frontend-image-tag /java-app/prod/release-id; do
+112:             aws ssm put-parameter --name "$p" --type String --overwrite --value "bootstrap"
+113:           done
+114:       # -------------------------------------------------------------------
+115:       # 4. Delete the published compose-object from S3.
+116:       # -------------------------------------------------------------------
+117:       - name: Delete compose object in S3
+118:         run: |
+119:           BUCKET="java-app-prod-config-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
+120:           aws s3 rm "s3://$BUCKET/docker-compose.prod.yml" || true
+121:       # -------------------------------------------------------------------
+122:       # 5. Empty both ECR repositories.
+123:       # -------------------------------------------------------------------
+124:       - name: Purge ECR images
+125:         run: |
+126:           for repo in java-app/backend java-app/frontend; do
+127:             echo "purging $repo"
+128:             IDS=$(aws ecr list-images --repository-name "$repo" --query 'imageIds[*]' --output json)
+129:             COUNT=$(echo "$IDS" | jq 'length')
+130:             if [ "$COUNT" -gt 0 ]; then
+131:               # batch-delete-image accepts up to 100 image IDs at a time;
+132:               # if there are more, page in chunks.
+133:               echo "$IDS" | jq -c '. as $a | range(0; ($a | length); 100) | $a[.:.+100]' | \
+134:                 while read -r CHUNK; do
+135:                   aws ecr batch-delete-image \
+136:                     --repository-name "$repo" \
+137:                     --image-ids "$CHUNK"
+138:                 done
+139:             fi
+140:           done
 ````
 
 ## File: .github/workflows/infra-plan.yml
@@ -4432,6 +4471,177 @@ repomix.config.json
 70:     enabled: ${SES_ENABLED:true}
 ````
 
+## File: app/backend/pom.xml
+````xml
+  1: <?xml version="1.0" encoding="UTF-8"?>
+  2: <project xmlns="http://maven.apache.org/POM/4.0.0"
+  3:          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  4:          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+  5:                              https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  6:     <modelVersion>4.0.0</modelVersion>
+  7:     <parent>
+  8:         <groupId>org.springframework.boot</groupId>
+  9:         <artifactId>spring-boot-starter-parent</artifactId>
+ 10:         <version>3.5.0</version>
+ 11:         <relativePath/>
+ 12:     </parent>
+ 13:     <groupId>com.talorlik</groupId>
+ 14:     <artifactId>java-app-backend</artifactId>
+ 15:     <version>1.0.0</version>
+ 16:     <packaging>jar</packaging>
+ 17:     <name>java-app-backend</name>
+ 18:     <description>Dockerized Java App on EC2 - Backend</description>
+ 19:     <properties>
+ 20:         <java.version>21</java.version>
+ 21:         <maven.compiler.source>21</maven.compiler.source>
+ 22:         <maven.compiler.target>21</maven.compiler.target>
+ 23:         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+ 24:         <jjwt.version>0.12.6</jjwt.version>
+ 25:         <aws.sdk.version>2.28.16</aws.sdk.version>
+ 26:         <testcontainers.version>1.20.4</testcontainers.version>
+ 27:         <bucket4j.version>8.10.1</bucket4j.version>
+ 28:     </properties>
+ 29:     <dependencies>
+ 30:         <!-- Web + validation -->
+ 31:         <dependency>
+ 32:             <groupId>org.springframework.boot</groupId>
+ 33:             <artifactId>spring-boot-starter-web</artifactId>
+ 34:         </dependency>
+ 35:         <dependency>
+ 36:             <groupId>org.springframework.boot</groupId>
+ 37:             <artifactId>spring-boot-starter-validation</artifactId>
+ 38:         </dependency>
+ 39:         <!-- Persistence -->
+ 40:         <dependency>
+ 41:             <groupId>org.springframework.boot</groupId>
+ 42:             <artifactId>spring-boot-starter-data-jpa</artifactId>
+ 43:         </dependency>
+ 44:         <dependency>
+ 45:             <groupId>com.mysql</groupId>
+ 46:             <artifactId>mysql-connector-j</artifactId>
+ 47:         </dependency>
+ 48:         <dependency>
+ 49:             <groupId>org.flywaydb</groupId>
+ 50:             <artifactId>flyway-core</artifactId>
+ 51:         </dependency>
+ 52:         <dependency>
+ 53:             <groupId>org.flywaydb</groupId>
+ 54:             <artifactId>flyway-mysql</artifactId>
+ 55:         </dependency>
+ 56:         <!-- Security + JWT -->
+ 57:         <dependency>
+ 58:             <groupId>org.springframework.boot</groupId>
+ 59:             <artifactId>spring-boot-starter-security</artifactId>
+ 60:         </dependency>
+ 61:         <dependency>
+ 62:             <groupId>io.jsonwebtoken</groupId>
+ 63:             <artifactId>jjwt-api</artifactId>
+ 64:             <version>${jjwt.version}</version>
+ 65:         </dependency>
+ 66:         <dependency>
+ 67:             <groupId>io.jsonwebtoken</groupId>
+ 68:             <artifactId>jjwt-impl</artifactId>
+ 69:             <version>${jjwt.version}</version>
+ 70:             <scope>runtime</scope>
+ 71:         </dependency>
+ 72:         <dependency>
+ 73:             <groupId>io.jsonwebtoken</groupId>
+ 74:             <artifactId>jjwt-jackson</artifactId>
+ 75:             <version>${jjwt.version}</version>
+ 76:             <scope>runtime</scope>
+ 77:         </dependency>
+ 78:         <!-- Actuator -->
+ 79:         <dependency>
+ 80:             <groupId>org.springframework.boot</groupId>
+ 81:             <artifactId>spring-boot-starter-actuator</artifactId>
+ 82:         </dependency>
+ 83:         <!-- AWS SDK v2 -->
+ 84:         <dependency>
+ 85:             <groupId>software.amazon.awssdk</groupId>
+ 86:             <artifactId>secretsmanager</artifactId>
+ 87:             <version>${aws.sdk.version}</version>
+ 88:         </dependency>
+ 89:         <dependency>
+ 90:             <groupId>software.amazon.awssdk</groupId>
+ 91:             <artifactId>sesv2</artifactId>
+ 92:             <version>${aws.sdk.version}</version>
+ 93:         </dependency>
+ 94:         <!-- Rate limiting -->
+ 95:         <dependency>
+ 96:             <groupId>com.bucket4j</groupId>
+ 97:             <artifactId>bucket4j-core</artifactId>
+ 98:             <version>${bucket4j.version}</version>
+ 99:         </dependency>
+100:         <!-- ===== Test ===== -->
+101:         <dependency>
+102:             <groupId>org.springframework.boot</groupId>
+103:             <artifactId>spring-boot-starter-test</artifactId>
+104:             <scope>test</scope>
+105:         </dependency>
+106:         <dependency>
+107:             <groupId>org.springframework.security</groupId>
+108:             <artifactId>spring-security-test</artifactId>
+109:             <scope>test</scope>
+110:         </dependency>
+111:         <dependency>
+112:             <groupId>org.testcontainers</groupId>
+113:             <artifactId>junit-jupiter</artifactId>
+114:             <version>${testcontainers.version}</version>
+115:             <scope>test</scope>
+116:         </dependency>
+117:         <dependency>
+118:             <groupId>org.testcontainers</groupId>
+119:             <artifactId>mysql</artifactId>
+120:             <version>${testcontainers.version}</version>
+121:             <scope>test</scope>
+122:         </dependency>
+123:     </dependencies>
+124:     <build>
+125:         <finalName>app</finalName>
+126:         <plugins>
+127:             <plugin>
+128:                 <groupId>org.springframework.boot</groupId>
+129:                 <artifactId>spring-boot-maven-plugin</artifactId>
+130:                 <configuration>
+131:                     <executable>true</executable>
+132:                     <layers>
+133:                         <enabled>true</enabled>
+134:                     </layers>
+135:                 </configuration>
+136:             </plugin>
+137:             <plugin>
+138:                 <groupId>org.apache.maven.plugins</groupId>
+139:                 <artifactId>maven-surefire-plugin</artifactId>
+140:                 <configuration>
+141:                     <includes>
+142:                         <include>**/unit/**/*Test.java</include>
+143:                         <include>**/*UnitTest.java</include>
+144:                     </includes>
+145:                 </configuration>
+146:             </plugin>
+147:             <plugin>
+148:                 <groupId>org.apache.maven.plugins</groupId>
+149:                 <artifactId>maven-failsafe-plugin</artifactId>
+150:                 <configuration>
+151:                     <includes>
+152:                         <include>**/integration/**/*IT.java</include>
+153:                         <include>**/*IT.java</include>
+154:                     </includes>
+155:                 </configuration>
+156:                 <executions>
+157:                     <execution>
+158:                         <goals>
+159:                             <goal>integration-test</goal>
+160:                             <goal>verify</goal>
+161:                         </goals>
+162:                     </execution>
+163:                 </executions>
+164:             </plugin>
+165:         </plugins>
+166:     </build>
+167: </project>
+````
+
 ## File: app/docker/env.template
 ````
  1: # EC2 user-data renders /opt/java-app/.env from this template at boot.
@@ -4454,6 +4664,30 @@ repomix.config.json
 18: ADMIN_SECRET_NAME=/java-app/prod/admin
 19: 
 20: APP_PUBLIC_URL=https://java.talorlik.com
+````
+
+## File: app/frontend/src/index.html
+````html
+ 1: <!doctype html>
+ 2: <html lang="en">
+ 3: <head>
+ 4:   <meta charset="utf-8" />
+ 5:   <meta name="viewport" content="width=device-width, initial-scale=1" />
+ 6:   <title>Dockerized Java App on EC2</title>
+ 7:   <link rel="stylesheet" href="/css/main.css" />
+ 8: </head>
+ 9: <body>
+10:   <header class="topbar">
+11:     <a class="brand" href="/">java.talorlik.com</a>
+12:     <nav id="nav"></nav>
+13:   </header>
+14:   <main id="app"></main>
+15:   <footer class="bottombar">
+16:     <span>Dockerized Java App on EC2</span>
+17:   </footer>
+18:   <script type="module" src="/js/app.js"></script>
+19: </body>
+20: </html>
 ````
 
 ## File: infra/bootstrap/outputs.tf
@@ -5641,729 +5875,6 @@ repomix.config.json
 131: # RDS SG has no egress rules - DB doesn't initiate outbound traffic.
 ````
 
-## File: .github/workflows/app-deploy.yml
-````yaml
-  1: name: app-deploy
-  2: on:
-  3:   workflow_dispatch:
-  4:     inputs:
-  5:       image_tag:
-  6:         description: "Override image tag (defaults to commit SHA)"
-  7:         required: false
-  8: permissions:
-  9:   id-token: write
- 10:   contents: read
- 11: concurrency:
- 12:   group: app-deploy
- 13:   cancel-in-progress: false
- 14: jobs:
- 15:   build-test:
- 16:     name: build + test (gate)
- 17:     uses: ./.github/workflows/ci.yml
- 18:     secrets: inherit
- 19:   deploy:
- 20:     name: build, push, refresh
- 21:     needs: build-test
- 22:     runs-on: ubuntu-latest
- 23:     environment: prod
- 24:     steps:
- 25:       - uses: actions/checkout@v4
- 26:       - uses: aws-actions/configure-aws-credentials@v4
- 27:         with:
- 28:           role-to-assume: ${{ secrets.DEPLOYMENT_ROLE_ARN }}
- 29:           aws-region: ${{ vars.AWS_REGION }}
- 30:           role-session-name: gha-app-deploy
- 31:       - id: tag
- 32:         run: |
- 33:           TAG="${{ github.event.inputs.image_tag }}"
- 34:           if [ -z "$TAG" ]; then TAG="sha-${GITHUB_SHA::12}"; fi
- 35:           echo "tag=$TAG" >> $GITHUB_OUTPUT
- 36:       - uses: aws-actions/amazon-ecr-login@v2
- 37:         id: ecr
- 38:       - name: Resolve ECR repo URLs
- 39:         id: repos
- 40:         run: |
- 41:           ACC="${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
- 42:           REG="${{ vars.AWS_REGION }}"
- 43:           echo "backend=$ACC.dkr.ecr.$REG.amazonaws.com/java-app/backend"   >> $GITHUB_OUTPUT
- 44:           echo "frontend=$ACC.dkr.ecr.$REG.amazonaws.com/java-app/frontend" >> $GITHUB_OUTPUT
- 45:       - name: Build + push backend
- 46:         run: |
- 47:           docker build -t ${{ steps.repos.outputs.backend }}:${{ steps.tag.outputs.tag }} app/backend
- 48:           docker push ${{ steps.repos.outputs.backend }}:${{ steps.tag.outputs.tag }}
- 49:       - name: Build + push frontend
- 50:         run: |
- 51:           docker build -t ${{ steps.repos.outputs.frontend }}:${{ steps.tag.outputs.tag }} app/frontend
- 52:           docker push ${{ steps.repos.outputs.frontend }}:${{ steps.tag.outputs.tag }}
- 53:       - name: Update SSM release params
- 54:         run: |
- 55:           aws ssm put-parameter --name "/java-app/prod/backend-image-tag"  --type String --overwrite --value "${{ steps.tag.outputs.tag }}"
- 56:           aws ssm put-parameter --name "/java-app/prod/frontend-image-tag" --type String --overwrite --value "${{ steps.tag.outputs.tag }}"
- 57:           aws ssm put-parameter --name "/java-app/prod/release-id"         --type String --overwrite --value "${{ github.sha }}"
- 58:       - name: Resolve ASG name
- 59:         id: asg
- 60:         run: |
- 61:           NAME=$(aws autoscaling describe-auto-scaling-groups \
- 62:             --query "AutoScalingGroups[?Tags[?Key=='Project' && Value=='java-app'] && Tags[?Key=='Environment' && Value=='prod']].AutoScalingGroupName | [0]" \
- 63:             --output text)
- 64:           if [ "$NAME" = "None" ] || [ -z "$NAME" ]; then
- 65:             # Fallback to deterministic name pattern
- 66:             NAME="java-app-prod-asg"
- 67:           fi
- 68:           echo "name=$NAME" >> $GITHUB_OUTPUT
- 69:       - name: Trigger ASG instance refresh
- 70:         id: refresh
- 71:         run: |
- 72:           REFRESH_ID=$(aws autoscaling start-instance-refresh \
- 73:             --auto-scaling-group-name "${{ steps.asg.outputs.name }}" \
- 74:             --preferences '{"MinHealthyPercentage":100,"MaxHealthyPercentage":200,"InstanceWarmup":180,"AutoRollback":true}' \
- 75:             --query 'InstanceRefreshId' --output text)
- 76:           echo "id=$REFRESH_ID" >> $GITHUB_OUTPUT
- 77:       - name: Wait for refresh to complete
- 78:         run: |
- 79:           set -e
- 80:           for i in $(seq 1 90); do
- 81:             S=$(aws autoscaling describe-instance-refreshes \
- 82:               --auto-scaling-group-name "${{ steps.asg.outputs.name }}" \
- 83:               --instance-refresh-ids "${{ steps.refresh.outputs.id }}" \
- 84:               --query 'InstanceRefreshes[0].Status' --output text)
- 85:             P=$(aws autoscaling describe-instance-refreshes \
- 86:               --auto-scaling-group-name "${{ steps.asg.outputs.name }}" \
- 87:               --instance-refresh-ids "${{ steps.refresh.outputs.id }}" \
- 88:               --query 'InstanceRefreshes[0].PercentageComplete' --output text)
- 89:             echo "refresh status=$S percent=$P"
- 90:             case "$S" in
- 91:               Successful) exit 0 ;;
- 92:               Failed|Cancelled|RollbackFailed|RollbackSuccessful)
- 93:                 echo "refresh ended with $S"; exit 1 ;;
- 94:             esac
- 95:             sleep 20
- 96:           done
- 97:           echo "timed out waiting for refresh"
- 98:           exit 1
- 99:       - name: Post-deploy smoke
-100:         run: |
-101:           for i in $(seq 1 30); do
-102:             if curl -fsS --max-time 10 "https://java.talorlik.com/actuator/health" | grep -q '"status":"UP"'; then
-103:               echo "smoke ok"; exit 0
-104:             fi
-105:             sleep 10
-106:           done
-107:           echo "smoke failed"; exit 1
-````
-
-## File: .github/workflows/infra-destroy.yml
-````yaml
-  1: ###############################################################################
-  2: # infra-destroy
-  3: #
-  4: # Tears down the entire prod env created by `infra/envs/prod`. Bootstrap
-  5: # state (S3 state bucket + KMS) is INTENTIONALLY left alone - destroying
-  6: # remote state bricks future restores and is almost never what you want.
-  7: #
-  8: # Sequence:
-  9: #   1. Confirm the user typed the destroy phrase exactly.
- 10: #   2. Optional pre-step: run app-layer cleanup (scale ASG to 0, purge ECR,
- 11: #      clear SSM release pointers, remove compose object) so the infra-side
- 12: #      destroy doesn't trip on protected resources. Idempotent.
- 13: #   3. Empty the ALB-logs bucket and the config bucket. Bucket policies
- 14: #      block plaintext puts, so a normal `aws s3 rm` won't always recurse;
- 15: #      we use s3api with versioning support.
- 16: #   4. Disable ALB deletion protection (TF can't destroy a protected ALB
- 17: #      and the resource attribute is set to `true` in module/alb.tf).
- 18: #   5. terraform init + destroy against `infra/envs/prod`.
- 19: #
- 20: # Run sparingly. The whole point of the bootstrap stack staying intact is
- 21: # that the next `infra-apply` rebuilds the env without you re-creating the
- 22: # state bucket.
- 23: ###############################################################################
- 24: name: infra-destroy
- 25: on:
- 26:   workflow_dispatch:
- 27:     inputs:
- 28:       confirm:
- 29:         description: 'Type DESTROY (uppercase) to confirm'
- 30:         required: true
- 31:         default: ''
- 32:       run_app_cleanup:
- 33:         description: 'First run app-layer cleanup (recommended)'
- 34:         type: boolean
- 35:         required: false
- 36:         default: true
- 37: permissions:
- 38:   id-token: write
- 39:   contents: read
- 40: concurrency:
- 41:   group: infra-destroy
- 42:   cancel-in-progress: false
- 43: jobs:
- 44:   destroy:
- 45:     name: tear down infra
- 46:     runs-on: ubuntu-latest
- 47:     environment: prod
- 48:     steps:
- 49:       - name: Validate confirmation phrase
- 50:         run: |
- 51:           if [ "${{ github.event.inputs.confirm }}" != "DESTROY" ]; then
- 52:             echo "::error::confirm input must be exactly 'DESTROY'."
- 53:             exit 1
- 54:           fi
- 55:       - uses: actions/checkout@v4
- 56:       - uses: aws-actions/configure-aws-credentials@v4
- 57:         with:
- 58:           role-to-assume: ${{ secrets.DEPLOYMENT_ROLE_ARN }}
- 59:           aws-region: ${{ vars.AWS_REGION }}
- 60:           role-session-name: gha-infra-destroy
- 61:       - uses: hashicorp/setup-terraform@v3
- 62:         with:
- 63:           terraform_version: 1.9.8
- 64:       # -------------------------------------------------------------------
- 65:       # 2. App-layer cleanup (best-effort, idempotent).
- 66:       # -------------------------------------------------------------------
- 67:       - name: Resolve ASG name
- 68:         if: ${{ github.event.inputs.run_app_cleanup == 'true' }}
- 69:         id: asg
- 70:         run: |
- 71:           NAME=$(aws autoscaling describe-auto-scaling-groups \
- 72:             --query "AutoScalingGroups[?Tags[?Key=='Project' && Value=='java-app'] && Tags[?Key=='Environment' && Value=='prod']].AutoScalingGroupName | [0]" \
- 73:             --output text)
- 74:           if [ "$NAME" = "None" ] || [ -z "$NAME" ]; then NAME="java-app-prod-asg"; fi
- 75:           echo "name=$NAME" >> "$GITHUB_OUTPUT"
- 76:       - name: Scale ASG to 0
- 77:         if: ${{ github.event.inputs.run_app_cleanup == 'true' }}
- 78:         run: |
- 79:           aws autoscaling update-auto-scaling-group \
- 80:             --auto-scaling-group-name "${{ steps.asg.outputs.name }}" \
- 81:             --min-size 0 --desired-capacity 0 --max-size 0 || true
- 82:           for i in $(seq 1 60); do
- 83:             COUNT=$(aws autoscaling describe-auto-scaling-groups \
- 84:               --auto-scaling-group-names "${{ steps.asg.outputs.name }}" \
- 85:               --query "AutoScalingGroups[0].Instances | length(@)" \
- 86:               --output text 2>/dev/null || echo "0")
- 87:             echo "in-service instances: $COUNT"
- 88:             if [ "$COUNT" = "0" ]; then break; fi
- 89:             sleep 15
- 90:           done
- 91:       - name: Purge ECR images
- 92:         if: ${{ github.event.inputs.run_app_cleanup == 'true' }}
- 93:         run: |
- 94:           for repo in java-app/backend java-app/frontend; do
- 95:             IDS=$(aws ecr list-images --repository-name "$repo" --query 'imageIds[*]' --output json 2>/dev/null || echo "[]")
- 96:             COUNT=$(echo "$IDS" | jq 'length')
- 97:             if [ "$COUNT" -gt 0 ]; then
- 98:               echo "$IDS" | jq -c '. as $a | range(0; ($a | length); 100) | $a[.:.+100]' | \
- 99:                 while read -r CHUNK; do
-100:                   aws ecr batch-delete-image --repository-name "$repo" --image-ids "$CHUNK" || true
-101:                 done
-102:             fi
-103:           done
-104:       # -------------------------------------------------------------------
-105:       # 3. Stop ALB from writing new logs, then disable deletion protection,
-106:       #    then empty buckets that TF refuses to remove (versioned).
-107:       # -------------------------------------------------------------------
-108:       - name: Disable ALB access logs and deletion protection
-109:         run: |
-110:           set -euo pipefail
-111:           ARN=$(aws elbv2 describe-load-balancers \
-112:             --query "LoadBalancers[?starts_with(LoadBalancerName, 'java-app-prod-alb')].LoadBalancerArn | [0]" \
-113:             --output text)
-114:           if [ -n "$ARN" ] && [ "$ARN" != "None" ]; then
-115:             aws elbv2 modify-load-balancer-attributes \
-116:               --load-balancer-arn "$ARN" \
-117:               --attributes Key=access_logs.s3.enabled,Value=false \
-118:                            Key=deletion_protection.enabled,Value=false
-119:           else
-120:             echo "no ALB found - it may already be gone"
-121:           fi
-122:       - name: Empty ALB log bucket
-123:         run: |
-124:           set -euo pipefail
-125:           B="java-app-prod-alb-logs-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
-126:           if ! aws s3api head-bucket --bucket "$B" 2>/dev/null; then
-127:             echo "bucket $B not present, skipping"
-128:             exit 0
-129:           fi
-130:           # Paginate, build full delete payload in one jq call, stop when empty.
-131:           while :; do
-132:             PAYLOAD=$(aws s3api list-object-versions \
-133:                         --bucket "$B" --max-items 900 --output json 2>/dev/null \
-134:                       | jq -c '{Objects: [((.Versions // [])[]),
-135:                                           ((.DeleteMarkers // [])[])
-136:                                           | {Key, VersionId}],
-137:                                Quiet: true}')
-138:             COUNT=$(printf '%s' "$PAYLOAD" | jq '.Objects | length')
-139:             [ "$COUNT" -eq 0 ] && break
-140:             aws s3api delete-objects --bucket "$B" --delete "$PAYLOAD"
-141:           done
-142:       - name: Empty config (compose) bucket
-143:         run: |
-144:           set -euo pipefail
-145:           B="java-app-prod-config-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
-146:           if ! aws s3api head-bucket --bucket "$B" 2>/dev/null; then
-147:             echo "bucket $B not present, skipping"
-148:             exit 0
-149:           fi
-150:           while :; do
-151:             PAYLOAD=$(aws s3api list-object-versions \
-152:                         --bucket "$B" --max-items 900 --output json 2>/dev/null \
-153:                       | jq -c '{Objects: [((.Versions // [])[]),
-154:                                           ((.DeleteMarkers // [])[])
-155:                                           | {Key, VersionId}],
-156:                                Quiet: true}')
-157:             COUNT=$(printf '%s' "$PAYLOAD" | jq '.Objects | length')
-158:             [ "$COUNT" -eq 0 ] && break
-159:             aws s3api delete-objects --bucket "$B" --delete "$PAYLOAD"
-160:           done
-161:       # -------------------------------------------------------------------
-162:       # 5. Terraform init, then state surgery + RDS prep, then destroy.
-163:       # -------------------------------------------------------------------
-164:       - name: terraform init
-165:         working-directory: infra/envs/prod
-166:         run: |
-167:           terraform init \
-168:             -backend-config="bucket=java-app-tfstate-${{ vars.DEPLOYMENT_ACCOUNT_ID }}-${{ vars.AWS_REGION }}" \
-169:             -backend-config="region=${{ vars.AWS_REGION }}"
-170:       # Detach service-linked roles from state. They are account-wide and
-171:       # AWS recreates them automatically on next ALB / ASG creation; deleting
-172:       # them here is unsafe and racy with ALB destroy.
-173:       - name: Detach service-linked roles from state
-174:         working-directory: infra/envs/prod
-175:         run: |
-176:           set -euo pipefail
-177:           for ADDR in \
-178:               aws_iam_service_linked_role.elb \
-179:               aws_iam_service_linked_role.autoscaling; do
-180:             if terraform state list | grep -qx "$ADDR"; then
-181:               terraform state rm "$ADDR"
-182:             else
-183:               echo "$ADDR not in state, skipping"
-184:             fi
-185:           done
-186:       # Disable RDS deletion protection imperatively, let any in-flight
-187:       # modify settle, and purge orphan retained automated backups left
-188:       # from prior failed destroys (those pin the parameter group's KMS
-189:       # key and bloat backup quota).
-190:       - name: Prepare RDS for destroy
-191:         run: |
-192:           set -euo pipefail
-193:           DBI="java-app-prod-mysql"
-194:           if aws rds describe-db-instances --db-instance-identifier "$DBI" >/dev/null 2>&1; then
-195:             aws rds modify-db-instance \
-196:               --db-instance-identifier "$DBI" \
-197:               --no-deletion-protection \
-198:               --apply-immediately >/dev/null
-199:             # Wait up to ~30 min for available; ignore terminal failures.
-200:             aws rds wait db-instance-available \
-201:               --db-instance-identifier "$DBI" || true
-202:           else
-203:             echo "RDS instance $DBI not present"
-204:           fi
-205:           # Purge any retained automated backups for this DBI. delete_automated_backups
-206:           # only fires inside DeleteDBInstance; orphans from earlier runs need this.
-207:           aws rds describe-db-instance-automated-backups \
-208:             --query "DBInstanceAutomatedBackups[?DBInstanceIdentifier=='$DBI'].DBInstanceAutomatedBackupsArn" \
-209:             --output text | tr '\t' '\n' | while read -r ARN; do
-210:               [ -z "$ARN" ] && continue
-211:               echo "deleting orphan automated backup $ARN"
-212:               aws rds delete-db-instance-automated-backup \
-213:                 --db-instance-automated-backups-arn "$ARN" || true
-214:             done
-215:       - name: terraform destroy
-216:         working-directory: infra/envs/prod
-217:         env:
-218:           TF_VAR_aws_region: ${{ vars.AWS_REGION }}
-219:           TF_VAR_deployment_account_id: ${{ vars.DEPLOYMENT_ACCOUNT_ID }}
-220:           TF_VAR_domain_account_id: ${{ vars.DOMAIN_ACCOUNT_ID }}
-221:           TF_VAR_domain_account_route53_role_arn: ${{ secrets.DOMAIN_ROUTE53_ROLE_ARN }}
-222:           TF_VAR_hosted_zone_id: ${{ vars.HOSTED_ZONE_ID }}
-223:           TF_VAR_acm_certificate_arn: ${{ secrets.ACM_CERTIFICATE_ARN }}
-224:           TF_VAR_rds_deletion_protection: "false"
-225:           TF_VAR_rds_skip_final_snapshot: "true"
-226:           TF_VAR_rds_delete_automated_backups: "true"
-227:           TF_VAR_alb_logs_force_destroy: "true"
-228:         run: |
-229:           terraform destroy -input=false -auto-approve
-````
-
-## File: infra/envs/prod/asg.tf
-````hcl
-  1: ###############################################################################
-  2: # Launch Template + Auto Scaling Group
-  3: #
-  4: # Latest Ubuntu LTS resolved at apply time via Canonical's public SSM
-  5: # parameter namespace. IMDSv2 required, encrypted EBS, no SSH ingress.
-  6: ###############################################################################
-  7: 
-  8: # Canonical publishes Ubuntu AMI IDs at predictable SSM paths under
-  9: # /aws/service/canonical/ubuntu/server/<codename>/stable/current/amd64/hvm/ebs-gp3/ami-id
- 10: data "aws_ssm_parameter" "ubuntu_ami" {
- 11:   name = "/aws/service/canonical/ubuntu/server/${var.ubuntu_lts_codename}/stable/current/amd64/hvm/ebs-gp3/ami-id"
- 12: }
- 13: 
- 14: # CloudWatch log group consumed by the CloudWatch agent on the instance.
- 15: resource "aws_cloudwatch_log_group" "app" {
- 16:   name              = "/${var.project}/${var.environment}/app"
- 17:   retention_in_days = var.log_retention_days
- 18:   kms_key_id        = aws_kms_key.app_secrets.arn
- 19:   tags              = local.common_tags
- 20: }
- 21: 
- 22: resource "aws_ssm_parameter" "log_group_app" {
- 23:   name  = local.ssm_keys.log_group_app
- 24:   type  = "String"
- 25:   value = aws_cloudwatch_log_group.app.name
- 26: }
- 27: 
- 28: # ----------------------------------------------------------------------------
- 29: # User-data script
- 30: #
- 31: # Renders a templated bash script that installs Docker + Compose + CloudWatch
- 32: # Agent, fetches release metadata from SSM and the compose file from S3,
- 33: # performs ECR auth, then `docker compose up -d`.
- 34: # ----------------------------------------------------------------------------
- 35: locals {
- 36:   user_data = base64encode(templatefile("${path.module}/templates/user_data.sh.tpl", {
- 37:     aws_region         = var.aws_region
- 38:     ssm_compose_object = local.ssm_keys.compose_object
- 39:     ssm_backend_tag    = local.ssm_keys.backend_image_tag
- 40:     ssm_frontend_tag   = local.ssm_keys.frontend_image_tag
- 41:     ssm_release_id     = local.ssm_keys.release_id
- 42:     ssm_db_endpoint    = local.ssm_keys.db_endpoint
- 43:     ssm_db_name        = local.ssm_keys.db_name
- 44:     secret_db_app_user = aws_secretsmanager_secret.db_app_user.name
- 45:     secret_admin       = aws_secretsmanager_secret.admin.name
- 46:     secret_jwt         = aws_secretsmanager_secret.jwt.name
- 47:     secret_ses         = aws_secretsmanager_secret.ses.name
- 48:     backend_repo_url   = aws_ecr_repository.this["backend"].repository_url
- 49:     frontend_repo_url  = aws_ecr_repository.this["frontend"].repository_url
- 50:     log_group_name     = aws_cloudwatch_log_group.app.name
- 51:     deployment_account = var.deployment_account_id
- 52:     app_subdomain      = var.app_subdomain
- 53:   }))
- 54: }
- 55: 
- 56: # ----------------------------------------------------------------------------
- 57: # Launch Template + ASG
- 58: # ----------------------------------------------------------------------------
- 59: module "asg" {
- 60:   source  = "terraform-aws-modules/autoscaling/aws"
- 61:   version = "~> 7.7"
- 62: 
- 63:   name = "${local.name_prefix}-asg"
- 64: 
- 65:   min_size            = var.asg_min_size
- 66:   desired_capacity    = var.asg_desired_capacity
- 67:   max_size            = var.asg_max_size
- 68:   vpc_zone_identifier = module.vpc.private_subnets
- 69:   health_check_type   = "ELB"
- 70: 
- 71:   # First boot on a fresh Ubuntu image runs apt + AWS CLI v2 install + CWA
- 72:   # install + ECR pull + Spring Boot startup. On t3.small with cold caches
- 73:   # this regularly takes 4-7 min. 300s grace was racing the slowest path
- 74:   # and producing one unhealthy instance per refresh; 600s gives Spring
- 75:   # Boot plus the actuator probe enough headroom.
- 76:   health_check_grace_period = 600
- 77: 
- 78:   # Attach to ALB target group created in alb.tf.
- 79:   target_group_arns = [module.alb.target_groups["app"].arn]
- 80: 
- 81:   # Launch Template
- 82:   create_launch_template = true
- 83:   launch_template_name   = "${local.name_prefix}-lt"
- 84:   update_default_version = true
- 85: 
- 86:   image_id      = data.aws_ssm_parameter.ubuntu_ami.value
- 87:   instance_type = var.instance_type
- 88:   user_data     = local.user_data
- 89: 
- 90:   iam_instance_profile_name = aws_iam_instance_profile.app.name
- 91: 
- 92:   security_groups = [aws_security_group.app.id]
- 93: 
- 94:   metadata_options = {
- 95:     http_endpoint               = "enabled"
- 96:     http_tokens                 = "required" # IMDSv2 required
- 97:     http_put_response_hop_limit = 2          # 2 = container-friendly (Docker bridge)
- 98:     instance_metadata_tags      = "enabled"
- 99:   }
-100: 
-101:   block_device_mappings = [
-102:     {
-103:       device_name = "/dev/sda1"
-104:       ebs = {
-105:         volume_size           = 30
-106:         volume_type           = "gp3"
-107:         encrypted             = true
-108:         delete_on_termination = true
-109:       }
-110:     }
-111:   ]
-112: 
-113:   tag_specifications = [
-114:     {
-115:       resource_type = "instance"
-116:       tags          = merge(local.common_tags, { Name = "${local.name_prefix}-app" })
-117:     },
-118:     {
-119:       resource_type = "volume"
-120:       tags          = local.common_tags
-121:     }
-122:   ]
-123: 
-124:   # Target tracking on ALB request count per target.
-125:   scaling_policies = {
-126:     request_count = {
-127:       policy_type = "TargetTrackingScaling"
-128:       target_tracking_configuration = {
-129:         predefined_metric_specification = {
-130:           predefined_metric_type = "ALBRequestCountPerTarget"
-131:           resource_label         = "${module.alb.arn_suffix}/${module.alb.target_groups["app"].arn_suffix}"
-132:         }
-133:         target_value = 200
-134:       }
-135:     }
-136:     cpu = {
-137:       policy_type = "TargetTrackingScaling"
-138:       target_tracking_configuration = {
-139:         predefined_metric_specification = {
-140:           predefined_metric_type = "ASGAverageCPUUtilization"
-141:         }
-142:         target_value = 60
-143:       }
-144:     }
-145:   }
-146: 
-147:   # Instance refresh: launch-before-terminate posture (min_healthy=100).
-148:   instance_refresh = {
-149:     strategy = "Rolling"
-150:     preferences = {
-151:       min_healthy_percentage = 100
-152:       max_healthy_percentage = 200
-153:       # Match health_check_grace_period; warmup of 180s undercounts a cold
-154:       # boot and starts pre-tracking metrics on a not-yet-ready instance.
-155:       instance_warmup = 300
-156:       auto_rollback   = true
-157:     }
-158:     triggers = ["tag"]
-159:   }
-160: 
-161:   enabled_metrics = [
-162:     "GroupInServiceInstances",
-163:     "GroupDesiredCapacity",
-164:     "GroupTotalInstances",
-165:     "GroupPendingInstances",
-166:     "GroupTerminatingInstances",
-167:   ]
-168: 
-169:   tags = local.common_tags
-170: 
-171:   depends_on = [
-172:     aws_iam_service_linked_role.autoscaling,
-173:     aws_iam_service_linked_role.elb,
-174:   ]
-175: }
-````
-
-## File: infra/envs/prod/iam.tf
-````hcl
-  1: ###############################################################################
-  2: # IAM
-  3: #
-  4: # Instance role used by EC2 app nodes. Permissions:
-  5: #   - Read approved secrets and SSM parameters.
-  6: #   - Pull from ECR.
-  7: #   - Write logs/metrics to CloudWatch.
-  8: #   - Send mail through SES from the approved identity.
-  9: #   - SSM Session Manager (no SSH).
- 10: ###############################################################################
- 11: 
- 12: data "aws_iam_policy_document" "ec2_assume" {
- 13:   statement {
- 14:     actions = ["sts:AssumeRole"]
- 15:     principals {
- 16:       type        = "Service"
- 17:       identifiers = ["ec2.amazonaws.com"]
- 18:     }
- 19:   }
- 20: }
- 21: 
- 22: resource "aws_iam_role" "app_instance" {
- 23:   name               = "${local.name_prefix}-app-instance"
- 24:   assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
- 25:   tags               = local.common_tags
- 26: }
- 27: 
- 28: # AWS-managed: SSM core (Session Manager).
- 29: resource "aws_iam_role_policy_attachment" "ssm_core" {
- 30:   role       = aws_iam_role.app_instance.name
- 31:   policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
- 32: }
- 33: 
- 34: # AWS-managed: CloudWatch Agent server policy.
- 35: resource "aws_iam_role_policy_attachment" "cw_agent" {
- 36:   role       = aws_iam_role.app_instance.name
- 37:   policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/CloudWatchAgentServerPolicy"
- 38: }
- 39: 
- 40: # AWS-managed: ECR read-only.
- 41: resource "aws_iam_role_policy_attachment" "ecr_pull" {
- 42:   role       = aws_iam_role.app_instance.name
- 43:   policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
- 44: }
- 45: 
- 46: # Inline: scoped read of approved secrets, SSM params, and SES send from
- 47: # the approved identity only.
- 48: data "aws_iam_policy_document" "app_inline" {
- 49:   # Secrets Manager read for known ARNs.
- 50:   statement {
- 51:     sid    = "ReadAppSecrets"
- 52:     effect = "Allow"
- 53:     actions = [
- 54:       "secretsmanager:GetSecretValue",
- 55:       "secretsmanager:DescribeSecret",
- 56:     ]
- 57:     resources = [
- 58:       aws_secretsmanager_secret.db_app_user.arn,
- 59:       aws_secretsmanager_secret.admin.arn,
- 60:       aws_secretsmanager_secret.jwt.arn,
- 61:       aws_secretsmanager_secret.ses.arn,
- 62:       module.rds.db_instance_master_user_secret_arn,
- 63:     ]
- 64:   }
- 65: 
- 66:   # SSM Parameter Store reads under the project namespace.
- 67:   statement {
- 68:     sid    = "ReadAppSsmParams"
- 69:     effect = "Allow"
- 70:     actions = [
- 71:       "ssm:GetParameter",
- 72:       "ssm:GetParameters",
- 73:       "ssm:GetParametersByPath",
- 74:     ]
- 75:     resources = ["arn:${data.aws_partition.current.partition}:ssm:${var.aws_region}:${var.deployment_account_id}:parameter${local.secret_prefix}/*"]
- 76:   }
- 77: 
- 78:   # KMS decrypt for the secrets/parameters CMK.
- 79:   statement {
- 80:     sid       = "DecryptAppCmk"
- 81:     effect    = "Allow"
- 82:     actions   = ["kms:Decrypt", "kms:DescribeKey"]
- 83:     resources = [aws_kms_key.app_secrets.arn]
- 84:   }
- 85: 
- 86:   # CloudWatch Logs PutLog from app + Docker.
- 87:   statement {
- 88:     sid    = "PutCloudWatchLogs"
- 89:     effect = "Allow"
- 90:     actions = [
- 91:       "logs:CreateLogGroup",
- 92:       "logs:CreateLogStream",
- 93:       "logs:PutLogEvents",
- 94:       "logs:DescribeLogStreams",
- 95:       "logs:DescribeLogGroups",
- 96:     ]
- 97:     resources = ["*"]
- 98:   }
- 99: 
-100:   # SES: send only from the approved identity.
-101:   statement {
-102:     sid    = "SesSendFromApprovedIdentity"
-103:     effect = "Allow"
-104:     actions = [
-105:       "ses:SendEmail",
-106:       "ses:SendRawEmail",
-107:     ]
-108:     resources = [
-109:       "arn:${data.aws_partition.current.partition}:ses:${var.aws_region}:${var.deployment_account_id}:identity/${var.ses_sender_subdomain}",
-110:     ]
-111:   }
-112: 
-113:   # ECR: GetAuthorizationToken is account-scoped (must be *).
-114:   statement {
-115:     sid       = "EcrAuth"
-116:     effect    = "Allow"
-117:     actions   = ["ecr:GetAuthorizationToken"]
-118:     resources = ["*"]
-119:   }
-120: 
-121:   # Allow the user-data boot script to mark its own instance Unhealthy if
-122:   # the actuator never returns UP within the boot deadline. Without this
-123:   # the box would linger as a black hole behind the ALB until the grace
-124:   # period expires; with it the ASG replaces it immediately.
-125:   # SetInstanceHealth has no resource-level scoping in IAM, so this must
-126:   # be Resource:* and is gated by the aws:SourceArn condition matching the
-127:   # caller's own instance ARN, scoping it in practice to instances of THIS
-128:   # ASG even if the role were ever reused elsewhere.
-129:   statement {
-130:     sid       = "SelfMarkInstanceUnhealthy"
-131:     effect    = "Allow"
-132:     actions   = ["autoscaling:SetInstanceHealth"]
-133:     resources = ["*"]
-134:   }
-135: }
-136: 
-137: resource "aws_iam_policy" "app_inline" {
-138:   name   = "${local.name_prefix}-app-inline"
-139:   policy = data.aws_iam_policy_document.app_inline.json
-140: }
-141: 
-142: resource "aws_iam_role_policy_attachment" "app_inline" {
-143:   role       = aws_iam_role.app_instance.name
-144:   policy_arn = aws_iam_policy.app_inline.arn
-145: }
-146: 
-147: resource "aws_iam_instance_profile" "app" {
-148:   name = "${local.name_prefix}-app-instance"
-149:   role = aws_iam_role.app_instance.name
-150: }
-151: 
-152: ###############################################################################
-153: # AWS Service-Linked Roles
-154: #
-155: # EC2 Auto Scaling and Elastic Load Balancing both rely on account-scoped
-156: # SLRs. AWS auto-creates them on first use, but the first-use creation can
-157: # race against ASG capacity validation, producing
-158: # "Access denied when attempting to assume role
-159: #  .../AWSServiceRoleForAutoScaling" errors.
-160: #
-161: # Managing them in Terraform with import blocks makes the dependency explicit
-162: # and idempotent across both fresh accounts and accounts where the SLRs
-163: # already exist (Terraform 1.5+ import blocks).
-164: ###############################################################################
-165: 
-166: resource "aws_iam_service_linked_role" "autoscaling" {
-167:   aws_service_name = "autoscaling.amazonaws.com"
-168:   description      = "Default SLR for EC2 Auto Scaling"
-169:   lifecycle {
-170:     # Description is AWS-managed; ignore drift so Terraform never tries to
-171:     # rewrite it.
-172:     ignore_changes = [description]
-173:   }
-174: }
-175: 
-176: resource "aws_iam_service_linked_role" "elb" {
-177:   aws_service_name = "elasticloadbalancing.amazonaws.com"
-178:   description      = "Default SLR for Elastic Load Balancing"
-179:   lifecycle {
-180:     ignore_changes = [description]
-181:   }
-182: }
-183: 
-184: # If the SLRs already exist in the account, Terraform imports them on the
-185: # next plan/apply rather than failing with "service role name has been
-186: # taken". If the SLRs do NOT exist (brand-new account), comment out these
-187: # import blocks before applying - Terraform will then create them.
-188: import {
-189:   to = aws_iam_service_linked_role.autoscaling
-190:   id = "arn:${data.aws_partition.current.partition}:iam::${var.deployment_account_id}:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling"
-191: }
-192: 
-193: import {
-194:   to = aws_iam_service_linked_role.elb
-195:   id = "arn:${data.aws_partition.current.partition}:iam::${var.deployment_account_id}:role/aws-service-role/elasticloadbalancing.amazonaws.com/AWSServiceRoleForElasticLoadBalancing"
-196: }
-````
-
 ## File: infra/envs/prod/variables.tf
 ````hcl
   1: ###############################################################################
@@ -6610,82 +6121,132 @@ repomix.config.json
 242: }
 ````
 
-## File: .gitignore
-````
- 1: # Compiled class file
- 2: *.class
- 3: 
- 4: # Log file
- 5: *.log
- 6: 
- 7: # BlueJ files
- 8: *.ctxt
- 9: 
-10: # Mobile Tools for Java (J2ME)
-11: .mtj.tmp/
-12: 
-13: # Package Files #
-14: *.jar
-15: *.war
-16: *.nar
-17: *.ear
-18: *.zip
-19: *.tar.gz
-20: *.rar
-21: 
-22: # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-23: hs_err_pid*
-24: replay_pid*
-25: 
-26: # Maven
-27: target/
-28: .mvn/wrapper/maven-wrapper.jar
-29: .mvnw
-30: 
-31: # Gradle (unused but excluded for safety)
-32: .gradle/
-33: build/
-34: 
-35: # IDE
-36: .idea/
-37: *.iml
-38: *.ipr
-39: *.iws
-40: .classpath
-41: .project
-42: .settings/
-43: .vscode/
-44: .cursor/
-45: .cowork/
-46: 
-47: # Frontend / node
-48: node_modules/
-49: dist/
-50: .next/
-51: .nuxt/
-52: .cache/
-53: .parcel-cache/
-54: playwright-report/
-55: test-results/
-56: 
-57: # Terraform
-58: .terraform/
-59: .terraform.lock.hcl
-60: *.tfstate
-61: *.tfstate.*
-62: *.tfplan
-63: crash.log
-64: 
-65: # Env / secrets
-66: .env
-67: .env.*
-68: !.env.example
-69: *.pem
-70: *.key
-71: 
-72: # OS
-73: .DS_Store
-74: Thumbs.db
+## File: .github/workflows/app-deploy.yml
+````yaml
+  1: name: app-deploy
+  2: on:
+  3:   workflow_dispatch:
+  4:     inputs:
+  5:       image_tag:
+  6:         description: "Override image tag (defaults to commit SHA)"
+  7:         required: false
+  8: permissions:
+  9:   id-token: write
+ 10:   contents: read
+ 11: concurrency:
+ 12:   group: app-deploy
+ 13:   cancel-in-progress: false
+ 14: jobs:
+ 15:   build-test:
+ 16:     name: build + test (gate)
+ 17:     uses: ./.github/workflows/ci.yml
+ 18:     secrets: inherit
+ 19:   deploy:
+ 20:     name: build, push, refresh
+ 21:     needs: build-test
+ 22:     runs-on: ubuntu-latest
+ 23:     environment: prod
+ 24:     env:
+ 25:       AWS_PAGER: ""
+ 26:     steps:
+ 27:       - uses: actions/checkout@v4
+ 28:       # Ensures `aws` is on PATH. GitHub-hosted ubuntu-latest already ships
+ 29:       # AWS CLI v2; nektos/act's default medium image does not. Idempotent.
+ 30:       - name: Ensure AWS CLI present
+ 31:         shell: bash
+ 32:         run: |
+ 33:           set -euo pipefail
+ 34:           if command -v aws >/dev/null 2>&1; then
+ 35:             aws --version
+ 36:             exit 0
+ 37:           fi
+ 38:           tmp=$(mktemp -d)
+ 39:           curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "$tmp/awscliv2.zip"
+ 40:           unzip -q "$tmp/awscliv2.zip" -d "$tmp"
+ 41:           sudo "$tmp/aws/install" --update
+ 42:           aws --version
+ 43:       - uses: aws-actions/configure-aws-credentials@v4
+ 44:         with:
+ 45:           role-to-assume: ${{ secrets.DEPLOYMENT_ROLE_ARN }}
+ 46:           aws-region: ${{ vars.AWS_REGION }}
+ 47:           role-session-name: gha-app-deploy
+ 48:       - id: tag
+ 49:         run: |
+ 50:           TAG="${{ github.event.inputs.image_tag }}"
+ 51:           if [ -z "$TAG" ]; then TAG="sha-${GITHUB_SHA::12}"; fi
+ 52:           echo "tag=$TAG" >> $GITHUB_OUTPUT
+ 53:       - uses: aws-actions/amazon-ecr-login@v2
+ 54:         id: ecr
+ 55:       - name: Resolve ECR repo URLs
+ 56:         id: repos
+ 57:         run: |
+ 58:           ACC="${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
+ 59:           REG="${{ vars.AWS_REGION }}"
+ 60:           echo "backend=$ACC.dkr.ecr.$REG.amazonaws.com/java-app/backend"   >> $GITHUB_OUTPUT
+ 61:           echo "frontend=$ACC.dkr.ecr.$REG.amazonaws.com/java-app/frontend" >> $GITHUB_OUTPUT
+ 62:       - name: Build + push backend
+ 63:         run: |
+ 64:           docker build -t ${{ steps.repos.outputs.backend }}:${{ steps.tag.outputs.tag }} app/backend
+ 65:           docker push ${{ steps.repos.outputs.backend }}:${{ steps.tag.outputs.tag }}
+ 66:       - name: Build + push frontend
+ 67:         run: |
+ 68:           docker build -t ${{ steps.repos.outputs.frontend }}:${{ steps.tag.outputs.tag }} app/frontend
+ 69:           docker push ${{ steps.repos.outputs.frontend }}:${{ steps.tag.outputs.tag }}
+ 70:       - name: Update SSM release params
+ 71:         run: |
+ 72:           aws ssm put-parameter --name "/java-app/prod/backend-image-tag"  --type String --overwrite --value "${{ steps.tag.outputs.tag }}"
+ 73:           aws ssm put-parameter --name "/java-app/prod/frontend-image-tag" --type String --overwrite --value "${{ steps.tag.outputs.tag }}"
+ 74:           aws ssm put-parameter --name "/java-app/prod/release-id"         --type String --overwrite --value "${{ github.sha }}"
+ 75:       - name: Resolve ASG name
+ 76:         id: asg
+ 77:         run: |
+ 78:           NAME=$(aws autoscaling describe-auto-scaling-groups \
+ 79:             --query "AutoScalingGroups[?Tags[?Key=='Project' && Value=='java-app'] && Tags[?Key=='Environment' && Value=='prod']].AutoScalingGroupName | [0]" \
+ 80:             --output text)
+ 81:           if [ "$NAME" = "None" ] || [ -z "$NAME" ]; then
+ 82:             # Fallback to deterministic name pattern
+ 83:             NAME="java-app-prod-asg"
+ 84:           fi
+ 85:           echo "name=$NAME" >> $GITHUB_OUTPUT
+ 86:       - name: Trigger ASG instance refresh
+ 87:         id: refresh
+ 88:         run: |
+ 89:           REFRESH_ID=$(aws autoscaling start-instance-refresh \
+ 90:             --auto-scaling-group-name "${{ steps.asg.outputs.name }}" \
+ 91:             --preferences '{"MinHealthyPercentage":100,"MaxHealthyPercentage":200,"InstanceWarmup":180,"AutoRollback":true}' \
+ 92:             --query 'InstanceRefreshId' --output text)
+ 93:           echo "id=$REFRESH_ID" >> $GITHUB_OUTPUT
+ 94:       - name: Wait for refresh to complete
+ 95:         run: |
+ 96:           set -e
+ 97:           for i in $(seq 1 90); do
+ 98:             S=$(aws autoscaling describe-instance-refreshes \
+ 99:               --auto-scaling-group-name "${{ steps.asg.outputs.name }}" \
+100:               --instance-refresh-ids "${{ steps.refresh.outputs.id }}" \
+101:               --query 'InstanceRefreshes[0].Status' --output text)
+102:             P=$(aws autoscaling describe-instance-refreshes \
+103:               --auto-scaling-group-name "${{ steps.asg.outputs.name }}" \
+104:               --instance-refresh-ids "${{ steps.refresh.outputs.id }}" \
+105:               --query 'InstanceRefreshes[0].PercentageComplete' --output text)
+106:             echo "refresh status=$S percent=$P"
+107:             case "$S" in
+108:               Successful) exit 0 ;;
+109:               Failed|Cancelled|RollbackFailed|RollbackSuccessful)
+110:                 echo "refresh ended with $S"; exit 1 ;;
+111:             esac
+112:             sleep 20
+113:           done
+114:           echo "timed out waiting for refresh"
+115:           exit 1
+116:       - name: Post-deploy smoke
+117:         run: |
+118:           for i in $(seq 1 30); do
+119:             if curl -fsS --max-time 10 "https://java.talorlik.com/actuator/health" | grep -q '"status":"UP"'; then
+120:               echo "smoke ok"; exit 0
+121:             fi
+122:             sleep 10
+123:           done
+124:           echo "smoke failed"; exit 1
 ````
 
 ## File: .github/workflows/ci.yml
@@ -6807,6 +6368,931 @@ repomix.config.json
 115:           directory: infra
 116:           framework: terraform
 117:           soft_fail: true
+````
+
+## File: infra/envs/prod/asg.tf
+````hcl
+  1: ###############################################################################
+  2: # Launch Template + Auto Scaling Group
+  3: #
+  4: # Latest Ubuntu LTS resolved at apply time via Canonical's public SSM
+  5: # parameter namespace. IMDSv2 required, encrypted EBS, no SSH ingress.
+  6: ###############################################################################
+  7: 
+  8: # Canonical publishes Ubuntu AMI IDs at predictable SSM paths under
+  9: # /aws/service/canonical/ubuntu/server/<codename>/stable/current/amd64/hvm/ebs-gp3/ami-id
+ 10: data "aws_ssm_parameter" "ubuntu_ami" {
+ 11:   name = "/aws/service/canonical/ubuntu/server/${var.ubuntu_lts_codename}/stable/current/amd64/hvm/ebs-gp3/ami-id"
+ 12: }
+ 13: 
+ 14: # CloudWatch log group consumed by the CloudWatch agent on the instance.
+ 15: resource "aws_cloudwatch_log_group" "app" {
+ 16:   name              = "/${var.project}/${var.environment}/app"
+ 17:   retention_in_days = var.log_retention_days
+ 18:   kms_key_id        = aws_kms_key.app_secrets.arn
+ 19:   tags              = local.common_tags
+ 20: }
+ 21: 
+ 22: resource "aws_ssm_parameter" "log_group_app" {
+ 23:   name  = local.ssm_keys.log_group_app
+ 24:   type  = "String"
+ 25:   value = aws_cloudwatch_log_group.app.name
+ 26: }
+ 27: 
+ 28: # ----------------------------------------------------------------------------
+ 29: # User-data script
+ 30: #
+ 31: # Renders a templated bash script that installs Docker + Compose + CloudWatch
+ 32: # Agent, fetches release metadata from SSM and the compose file from S3,
+ 33: # performs ECR auth, then `docker compose up -d`.
+ 34: # ----------------------------------------------------------------------------
+ 35: locals {
+ 36:   user_data = base64encode(templatefile("${path.module}/templates/user_data.sh.tpl", {
+ 37:     aws_region         = var.aws_region
+ 38:     ssm_compose_object = local.ssm_keys.compose_object
+ 39:     ssm_backend_tag    = local.ssm_keys.backend_image_tag
+ 40:     ssm_frontend_tag   = local.ssm_keys.frontend_image_tag
+ 41:     ssm_release_id     = local.ssm_keys.release_id
+ 42:     ssm_db_endpoint    = local.ssm_keys.db_endpoint
+ 43:     ssm_db_name        = local.ssm_keys.db_name
+ 44:     secret_db_app_user = aws_secretsmanager_secret.db_app_user.name
+ 45:     secret_admin       = aws_secretsmanager_secret.admin.name
+ 46:     secret_jwt         = aws_secretsmanager_secret.jwt.name
+ 47:     secret_ses         = aws_secretsmanager_secret.ses.name
+ 48:     backend_repo_url   = aws_ecr_repository.this["backend"].repository_url
+ 49:     frontend_repo_url  = aws_ecr_repository.this["frontend"].repository_url
+ 50:     log_group_name     = aws_cloudwatch_log_group.app.name
+ 51:     deployment_account = var.deployment_account_id
+ 52:     app_subdomain      = var.app_subdomain
+ 53:   }))
+ 54: }
+ 55: 
+ 56: # ----------------------------------------------------------------------------
+ 57: # Launch Template + ASG
+ 58: # ----------------------------------------------------------------------------
+ 59: module "asg" {
+ 60:   source  = "terraform-aws-modules/autoscaling/aws"
+ 61:   version = "~> 7.7"
+ 62: 
+ 63:   name = "${local.name_prefix}-asg"
+ 64: 
+ 65:   min_size            = var.asg_min_size
+ 66:   desired_capacity    = var.asg_desired_capacity
+ 67:   max_size            = var.asg_max_size
+ 68:   vpc_zone_identifier = module.vpc.private_subnets
+ 69:   health_check_type   = "ELB"
+ 70: 
+ 71:   # First boot on a fresh Ubuntu image runs apt + AWS CLI v2 install + CWA
+ 72:   # install + ECR pull + Spring Boot startup. On t3.small with cold caches
+ 73:   # this regularly takes 4-7 min. 300s grace was racing the slowest path
+ 74:   # and producing one unhealthy instance per refresh; 600s gives Spring
+ 75:   # Boot plus the actuator probe enough headroom.
+ 76:   health_check_grace_period = 600
+ 77: 
+ 78:   # Attach to ALB target group created in alb.tf.
+ 79:   target_group_arns = [module.alb.target_groups["app"].arn]
+ 80: 
+ 81:   # Launch Template
+ 82:   create_launch_template = true
+ 83:   launch_template_name   = "${local.name_prefix}-lt"
+ 84:   update_default_version = true
+ 85: 
+ 86:   image_id      = data.aws_ssm_parameter.ubuntu_ami.value
+ 87:   instance_type = var.instance_type
+ 88:   user_data     = local.user_data
+ 89: 
+ 90:   iam_instance_profile_name = aws_iam_instance_profile.app.name
+ 91: 
+ 92:   security_groups = [aws_security_group.app.id]
+ 93: 
+ 94:   metadata_options = {
+ 95:     http_endpoint               = "enabled"
+ 96:     http_tokens                 = "required" # IMDSv2 required
+ 97:     http_put_response_hop_limit = 2          # 2 = container-friendly (Docker bridge)
+ 98:     instance_metadata_tags      = "enabled"
+ 99:   }
+100: 
+101:   block_device_mappings = [
+102:     {
+103:       device_name = "/dev/sda1"
+104:       ebs = {
+105:         volume_size           = 30
+106:         volume_type           = "gp3"
+107:         encrypted             = true
+108:         delete_on_termination = true
+109:       }
+110:     }
+111:   ]
+112: 
+113:   tag_specifications = [
+114:     {
+115:       resource_type = "instance"
+116:       tags          = merge(local.common_tags, { Name = "${local.name_prefix}-app" })
+117:     },
+118:     {
+119:       resource_type = "volume"
+120:       tags          = local.common_tags
+121:     }
+122:   ]
+123: 
+124:   # Target tracking on ALB request count per target.
+125:   scaling_policies = {
+126:     request_count = {
+127:       policy_type = "TargetTrackingScaling"
+128:       target_tracking_configuration = {
+129:         predefined_metric_specification = {
+130:           predefined_metric_type = "ALBRequestCountPerTarget"
+131:           resource_label         = "${module.alb.arn_suffix}/${module.alb.target_groups["app"].arn_suffix}"
+132:         }
+133:         target_value = 200
+134:       }
+135:     }
+136:     cpu = {
+137:       policy_type = "TargetTrackingScaling"
+138:       target_tracking_configuration = {
+139:         predefined_metric_specification = {
+140:           predefined_metric_type = "ASGAverageCPUUtilization"
+141:         }
+142:         target_value = 60
+143:       }
+144:     }
+145:   }
+146: 
+147:   # Instance refresh: launch-before-terminate posture (min_healthy=100).
+148:   instance_refresh = {
+149:     strategy = "Rolling"
+150:     preferences = {
+151:       min_healthy_percentage = 100
+152:       max_healthy_percentage = 200
+153:       # Match health_check_grace_period; warmup of 180s undercounts a cold
+154:       # boot and starts pre-tracking metrics on a not-yet-ready instance.
+155:       instance_warmup = 300
+156:       auto_rollback   = true
+157:     }
+158:     triggers = ["tag"]
+159:   }
+160: 
+161:   enabled_metrics = [
+162:     "GroupInServiceInstances",
+163:     "GroupDesiredCapacity",
+164:     "GroupTotalInstances",
+165:     "GroupPendingInstances",
+166:     "GroupTerminatingInstances",
+167:   ]
+168: 
+169:   tags = local.common_tags
+170: }
+````
+
+## File: infra/envs/prod/iam.tf
+````hcl
+  1: ###############################################################################
+  2: # IAM
+  3: #
+  4: # Instance role used by EC2 app nodes. Permissions:
+  5: #   - Read approved secrets and SSM parameters.
+  6: #   - Pull from ECR.
+  7: #   - Write logs/metrics to CloudWatch.
+  8: #   - Send mail through SES from the approved identity.
+  9: #   - SSM Session Manager (no SSH).
+ 10: ###############################################################################
+ 11: 
+ 12: data "aws_iam_policy_document" "ec2_assume" {
+ 13:   statement {
+ 14:     actions = ["sts:AssumeRole"]
+ 15:     principals {
+ 16:       type        = "Service"
+ 17:       identifiers = ["ec2.amazonaws.com"]
+ 18:     }
+ 19:   }
+ 20: }
+ 21: 
+ 22: resource "aws_iam_role" "app_instance" {
+ 23:   name               = "${local.name_prefix}-app-instance"
+ 24:   assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
+ 25:   tags               = local.common_tags
+ 26: }
+ 27: 
+ 28: # AWS-managed: SSM core (Session Manager).
+ 29: resource "aws_iam_role_policy_attachment" "ssm_core" {
+ 30:   role       = aws_iam_role.app_instance.name
+ 31:   policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
+ 32: }
+ 33: 
+ 34: # AWS-managed: CloudWatch Agent server policy.
+ 35: resource "aws_iam_role_policy_attachment" "cw_agent" {
+ 36:   role       = aws_iam_role.app_instance.name
+ 37:   policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/CloudWatchAgentServerPolicy"
+ 38: }
+ 39: 
+ 40: # AWS-managed: ECR read-only.
+ 41: resource "aws_iam_role_policy_attachment" "ecr_pull" {
+ 42:   role       = aws_iam_role.app_instance.name
+ 43:   policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+ 44: }
+ 45: 
+ 46: # Inline: scoped read of approved secrets, SSM params, and SES send from
+ 47: # the approved identity only.
+ 48: data "aws_iam_policy_document" "app_inline" {
+ 49:   # Secrets Manager read for known ARNs.
+ 50:   statement {
+ 51:     sid    = "ReadAppSecrets"
+ 52:     effect = "Allow"
+ 53:     actions = [
+ 54:       "secretsmanager:GetSecretValue",
+ 55:       "secretsmanager:DescribeSecret",
+ 56:     ]
+ 57:     resources = [
+ 58:       aws_secretsmanager_secret.db_app_user.arn,
+ 59:       aws_secretsmanager_secret.admin.arn,
+ 60:       aws_secretsmanager_secret.jwt.arn,
+ 61:       aws_secretsmanager_secret.ses.arn,
+ 62:       module.rds.db_instance_master_user_secret_arn,
+ 63:     ]
+ 64:   }
+ 65: 
+ 66:   # SSM Parameter Store reads under the project namespace.
+ 67:   statement {
+ 68:     sid    = "ReadAppSsmParams"
+ 69:     effect = "Allow"
+ 70:     actions = [
+ 71:       "ssm:GetParameter",
+ 72:       "ssm:GetParameters",
+ 73:       "ssm:GetParametersByPath",
+ 74:     ]
+ 75:     resources = ["arn:${data.aws_partition.current.partition}:ssm:${var.aws_region}:${var.deployment_account_id}:parameter${local.secret_prefix}/*"]
+ 76:   }
+ 77: 
+ 78:   # KMS decrypt for the secrets/parameters CMK.
+ 79:   statement {
+ 80:     sid       = "DecryptAppCmk"
+ 81:     effect    = "Allow"
+ 82:     actions   = ["kms:Decrypt", "kms:DescribeKey"]
+ 83:     resources = [aws_kms_key.app_secrets.arn]
+ 84:   }
+ 85: 
+ 86:   # CloudWatch Logs PutLog from app + Docker.
+ 87:   statement {
+ 88:     sid    = "PutCloudWatchLogs"
+ 89:     effect = "Allow"
+ 90:     actions = [
+ 91:       "logs:CreateLogGroup",
+ 92:       "logs:CreateLogStream",
+ 93:       "logs:PutLogEvents",
+ 94:       "logs:DescribeLogStreams",
+ 95:       "logs:DescribeLogGroups",
+ 96:     ]
+ 97:     resources = ["*"]
+ 98:   }
+ 99: 
+100:   # SES: send only from the approved identity.
+101:   statement {
+102:     sid    = "SesSendFromApprovedIdentity"
+103:     effect = "Allow"
+104:     actions = [
+105:       "ses:SendEmail",
+106:       "ses:SendRawEmail",
+107:     ]
+108:     resources = [
+109:       "arn:${data.aws_partition.current.partition}:ses:${var.aws_region}:${var.deployment_account_id}:identity/${var.ses_sender_subdomain}",
+110:     ]
+111:   }
+112: 
+113:   # ECR: GetAuthorizationToken is account-scoped (must be *).
+114:   statement {
+115:     sid       = "EcrAuth"
+116:     effect    = "Allow"
+117:     actions   = ["ecr:GetAuthorizationToken"]
+118:     resources = ["*"]
+119:   }
+120: 
+121:   # Allow the user-data boot script to mark its own instance Unhealthy if
+122:   # the actuator never returns UP within the boot deadline. Without this
+123:   # the box would linger as a black hole behind the ALB until the grace
+124:   # period expires; with it the ASG replaces it immediately.
+125:   # SetInstanceHealth has no resource-level scoping in IAM, so this must
+126:   # be Resource:* and is gated by the aws:SourceArn condition matching the
+127:   # caller's own instance ARN, scoping it in practice to instances of THIS
+128:   # ASG even if the role were ever reused elsewhere.
+129:   statement {
+130:     sid       = "SelfMarkInstanceUnhealthy"
+131:     effect    = "Allow"
+132:     actions   = ["autoscaling:SetInstanceHealth"]
+133:     resources = ["*"]
+134:   }
+135: }
+136: 
+137: resource "aws_iam_policy" "app_inline" {
+138:   name   = "${local.name_prefix}-app-inline"
+139:   policy = data.aws_iam_policy_document.app_inline.json
+140: }
+141: 
+142: resource "aws_iam_role_policy_attachment" "app_inline" {
+143:   role       = aws_iam_role.app_instance.name
+144:   policy_arn = aws_iam_policy.app_inline.arn
+145: }
+146: 
+147: resource "aws_iam_instance_profile" "app" {
+148:   name = "${local.name_prefix}-app-instance"
+149:   role = aws_iam_role.app_instance.name
+150: }
+151: 
+152: ###############################################################################
+153: # AWS Service-Linked Roles
+154: #
+155: # EC2 Auto Scaling and Elastic Load Balancing both rely on account-scoped
+156: # SLRs. They are pre-created out-of-band by the GitHub Actions workflows
+157: # (.github/workflows/infra-apply.yml and infra-destroy.yml) using
+158: # `aws iam create-service-linked-role` before `terraform init`. They are
+159: # intentionally not managed by Terraform: they are account-wide singletons,
+160: # never deleted by this stack, and pre-creation in the workflow eliminates
+161: # the original race against ASG capacity validation without import blocks
+162: # or removed-blocks gymnastics.
+163: ###############################################################################
+````
+
+## File: .gitignore
+````
+ 1: # Compiled class file
+ 2: *.class
+ 3: 
+ 4: # Log file
+ 5: *.log
+ 6: 
+ 7: # BlueJ files
+ 8: *.ctxt
+ 9: 
+10: # Mobile Tools for Java (J2ME)
+11: .mtj.tmp/
+12: 
+13: # Package Files #
+14: *.jar
+15: *.war
+16: *.nar
+17: *.ear
+18: *.zip
+19: *.tar.gz
+20: *.rar
+21: 
+22: # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+23: hs_err_pid*
+24: replay_pid*
+25: 
+26: # Maven
+27: target/
+28: .mvn/wrapper/maven-wrapper.jar
+29: .mvnw
+30: 
+31: # Gradle (unused but excluded for safety)
+32: .gradle/
+33: build/
+34: 
+35: # IDE
+36: .idea/
+37: *.iml
+38: *.ipr
+39: *.iws
+40: .classpath
+41: .project
+42: .settings/
+43: .vscode/
+44: .cursor/
+45: 
+46: # Frontend / node
+47: node_modules/
+48: dist/
+49: .next/
+50: .nuxt/
+51: .cache/
+52: .parcel-cache/
+53: playwright-report/
+54: test-results/
+55: 
+56: # Terraform
+57: .terraform/
+58: .terraform.lock.hcl
+59: *.tfstate
+60: *.tfstate.*
+61: *.tfplan
+62: crash.log
+63: 
+64: # Env / secrets
+65: .env
+66: .env.*
+67: !.env.example
+68: *.pem
+69: *.key
+70: .github/env.local
+71: .github/vars.local
+72: .github/secrets.local
+73: .github/secrets.local.aws
+74: 
+75: # OS
+76: .DS_Store
+77: Thumbs.db
+````
+
+## File: .github/workflows/infra-destroy.yml
+````yaml
+  1: ###############################################################################
+  2: # infra-destroy
+  3: #
+  4: # Tears down the entire prod env created by `infra/envs/prod`. Bootstrap
+  5: # state (S3 state bucket + KMS) is INTENTIONALLY left alone - destroying
+  6: # remote state bricks future restores and is almost never what you want.
+  7: #
+  8: # Sequence:
+  9: #   1. Confirm the user typed the destroy phrase exactly.
+ 10: #   2. Optional pre-step: run app-layer cleanup (scale ASG to 0, purge ECR,
+ 11: #      clear SSM release pointers, remove compose object) so the infra-side
+ 12: #      destroy doesn't trip on protected resources. Idempotent.
+ 13: #   3. Empty the ALB-logs bucket and the config bucket. Bucket policies
+ 14: #      block plaintext puts, so a normal `aws s3 rm` won't always recurse;
+ 15: #      we use s3api with versioning support.
+ 16: #   4. Disable ALB deletion protection (TF can't destroy a protected ALB
+ 17: #      and the resource attribute is set to `true` in module/alb.tf).
+ 18: #   5. terraform init + destroy against `infra/envs/prod`.
+ 19: #
+ 20: # Run sparingly. The whole point of the bootstrap stack staying intact is
+ 21: # that the next `infra-apply` rebuilds the env without you re-creating the
+ 22: # state bucket.
+ 23: ###############################################################################
+ 24: name: infra-destroy
+ 25: on:
+ 26:   workflow_dispatch:
+ 27:     inputs:
+ 28:       confirm:
+ 29:         description: 'Type DESTROY (uppercase) to confirm'
+ 30:         required: true
+ 31:         default: ''
+ 32:       run_app_cleanup:
+ 33:         description: 'First run app-layer cleanup (recommended)'
+ 34:         type: boolean
+ 35:         required: false
+ 36:         default: true
+ 37: permissions:
+ 38:   id-token: write
+ 39:   contents: read
+ 40: concurrency:
+ 41:   group: infra-destroy
+ 42:   cancel-in-progress: false
+ 43: jobs:
+ 44:   destroy:
+ 45:     name: tear down infra
+ 46:     runs-on: ubuntu-latest
+ 47:     environment: prod
+ 48:     env:
+ 49:       AWS_PAGER: ""
+ 50:     steps:
+ 51:       - name: Validate confirmation phrase
+ 52:         run: |
+ 53:           if [ "${{ github.event.inputs.confirm }}" != "DESTROY" ]; then
+ 54:             echo "::error::confirm input must be exactly 'DESTROY'."
+ 55:             exit 1
+ 56:           fi
+ 57:       - uses: actions/checkout@v4
+ 58:       # Ensures `aws` is on PATH. GitHub-hosted ubuntu-latest already ships
+ 59:       # AWS CLI v2; nektos/act's default medium image does not. Idempotent.
+ 60:       - name: Ensure AWS CLI present
+ 61:         shell: bash
+ 62:         run: |
+ 63:           set -euo pipefail
+ 64:           if command -v aws >/dev/null 2>&1; then
+ 65:             aws --version
+ 66:             exit 0
+ 67:           fi
+ 68:           tmp=$(mktemp -d)
+ 69:           curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "$tmp/awscliv2.zip"
+ 70:           unzip -q "$tmp/awscliv2.zip" -d "$tmp"
+ 71:           sudo "$tmp/aws/install" --update
+ 72:           aws --version
+ 73:       - uses: aws-actions/configure-aws-credentials@v4
+ 74:         with:
+ 75:           role-to-assume: ${{ secrets.DEPLOYMENT_ROLE_ARN }}
+ 76:           aws-region: ${{ vars.AWS_REGION }}
+ 77:           role-session-name: gha-infra-destroy
+ 78:       - uses: hashicorp/setup-terraform@v3
+ 79:         with:
+ 80:           terraform_version: 1.9.8
+ 81:       # -------------------------------------------------------------------
+ 82:       # 2. App-layer cleanup (best-effort, idempotent).
+ 83:       # -------------------------------------------------------------------
+ 84:       - name: Resolve ASG name
+ 85:         if: ${{ github.event.inputs.run_app_cleanup == 'true' }}
+ 86:         id: asg
+ 87:         run: |
+ 88:           NAME=$(aws autoscaling describe-auto-scaling-groups \
+ 89:             --query "AutoScalingGroups[?Tags[?Key=='Project' && Value=='java-app'] && Tags[?Key=='Environment' && Value=='prod']].AutoScalingGroupName | [0]" \
+ 90:             --output text)
+ 91:           if [ "$NAME" = "None" ] || [ -z "$NAME" ]; then NAME="java-app-prod-asg"; fi
+ 92:           echo "name=$NAME" >> "$GITHUB_OUTPUT"
+ 93:       - name: Scale ASG to 0
+ 94:         if: ${{ github.event.inputs.run_app_cleanup == 'true' }}
+ 95:         run: |
+ 96:           aws autoscaling update-auto-scaling-group \
+ 97:             --auto-scaling-group-name "${{ steps.asg.outputs.name }}" \
+ 98:             --min-size 0 --desired-capacity 0 --max-size 0 || true
+ 99:           for i in $(seq 1 60); do
+100:             COUNT=$(aws autoscaling describe-auto-scaling-groups \
+101:               --auto-scaling-group-names "${{ steps.asg.outputs.name }}" \
+102:               --query "AutoScalingGroups[0].Instances | length(@)" \
+103:               --output text 2>/dev/null || echo "0")
+104:             echo "in-service instances: $COUNT"
+105:             if [ "$COUNT" = "0" ]; then break; fi
+106:             sleep 15
+107:           done
+108:       - name: Purge ECR images
+109:         if: ${{ github.event.inputs.run_app_cleanup == 'true' }}
+110:         run: |
+111:           for repo in java-app/backend java-app/frontend; do
+112:             IDS=$(aws ecr list-images --repository-name "$repo" --query 'imageIds[*]' --output json 2>/dev/null || echo "[]")
+113:             COUNT=$(echo "$IDS" | jq 'length')
+114:             if [ "$COUNT" -gt 0 ]; then
+115:               echo "$IDS" | jq -c '. as $a | range(0; ($a | length); 100) | $a[.:.+100]' | \
+116:                 while read -r CHUNK; do
+117:                   aws ecr batch-delete-image --repository-name "$repo" --image-ids "$CHUNK" || true
+118:                 done
+119:             fi
+120:           done
+121:       # -------------------------------------------------------------------
+122:       # 3. Stop ALB from writing new logs, then disable deletion protection,
+123:       #    then empty buckets that TF refuses to remove (versioned).
+124:       # -------------------------------------------------------------------
+125:       - name: Disable ALB access logs and deletion protection
+126:         run: |
+127:           set -euo pipefail
+128:           ARN=$(aws elbv2 describe-load-balancers \
+129:             --query "LoadBalancers[?starts_with(LoadBalancerName, 'java-app-prod-alb')].LoadBalancerArn | [0]" \
+130:             --output text)
+131:           if [ -n "$ARN" ] && [ "$ARN" != "None" ]; then
+132:             aws elbv2 modify-load-balancer-attributes \
+133:               --load-balancer-arn "$ARN" \
+134:               --attributes Key=access_logs.s3.enabled,Value=false \
+135:                            Key=deletion_protection.enabled,Value=false
+136:           else
+137:             echo "no ALB found - it may already be gone"
+138:           fi
+139:       - name: Empty ALB log bucket
+140:         run: |
+141:           set -euo pipefail
+142:           B="java-app-prod-alb-logs-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
+143:           if ! aws s3api head-bucket --bucket "$B" 2>/dev/null; then
+144:             echo "bucket $B not present, skipping"
+145:             exit 0
+146:           fi
+147:           # Paginate, build full delete payload in one jq call, stop when empty.
+148:           while :; do
+149:             PAYLOAD=$(aws s3api list-object-versions \
+150:                         --bucket "$B" --max-items 900 --output json 2>/dev/null \
+151:                       | jq -c '{Objects: [((.Versions // [])[]),
+152:                                           ((.DeleteMarkers // [])[])
+153:                                           | {Key, VersionId}],
+154:                                Quiet: true}')
+155:             COUNT=$(printf '%s' "$PAYLOAD" | jq '.Objects | length')
+156:             [ "$COUNT" -eq 0 ] && break
+157:             aws s3api delete-objects --bucket "$B" --delete "$PAYLOAD"
+158:           done
+159:       - name: Empty config (compose) bucket
+160:         run: |
+161:           set -euo pipefail
+162:           B="java-app-prod-config-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
+163:           if ! aws s3api head-bucket --bucket "$B" 2>/dev/null; then
+164:             echo "bucket $B not present, skipping"
+165:             exit 0
+166:           fi
+167:           while :; do
+168:             PAYLOAD=$(aws s3api list-object-versions \
+169:                         --bucket "$B" --max-items 900 --output json 2>/dev/null \
+170:                       | jq -c '{Objects: [((.Versions // [])[]),
+171:                                           ((.DeleteMarkers // [])[])
+172:                                           | {Key, VersionId}],
+173:                                Quiet: true}')
+174:             COUNT=$(printf '%s' "$PAYLOAD" | jq '.Objects | length')
+175:             [ "$COUNT" -eq 0 ] && break
+176:             aws s3api delete-objects --bucket "$B" --delete "$PAYLOAD"
+177:           done
+178:       # -------------------------------------------------------------------
+179:       # 5. Terraform init, then RDS prep, then destroy.
+180:       # -------------------------------------------------------------------
+181:       # Pre-create AWS Service-Linked Roles. They are no longer managed by
+182:       # Terraform, but covering the case where someone deleted them
+183:       # out-of-band keeps `terraform plan -destroy` from failing on missing
+184:       # IAM principals referenced by leftover ASG/ALB resources.
+185:       - name: Ensure AWS service-linked roles exist
+186:         run: |
+187:           set -euo pipefail
+188:           for SVC in autoscaling.amazonaws.com elasticloadbalancing.amazonaws.com; do
+189:             if out=$(aws iam create-service-linked-role --aws-service-name "$SVC" 2>&1); then
+190:               echo "Created SLR for $SVC"
+191:             else
+192:               if echo "$out" | grep -qiE 'has been taken in this account|already exists'; then
+193:                 echo "SLR for $SVC already exists; skipping."
+194:               else
+195:                 echo "$out" >&2
+196:                 exit 1
+197:               fi
+198:             fi
+199:           done
+200:       - name: terraform init
+201:         working-directory: infra/envs/prod
+202:         run: |
+203:           terraform init \
+204:             -backend-config="bucket=java-app-tfstate-${{ vars.DEPLOYMENT_ACCOUNT_ID }}-${{ vars.AWS_REGION }}" \
+205:             -backend-config="region=${{ vars.AWS_REGION }}"
+206:       # Disable RDS deletion protection imperatively, let any in-flight
+207:       # modify settle, and purge orphan retained automated backups left
+208:       # from prior failed destroys (those pin the parameter group's KMS
+209:       # key and bloat backup quota).
+210:       - name: Prepare RDS for destroy
+211:         run: |
+212:           set -euo pipefail
+213:           DBI="java-app-prod-mysql"
+214:           if aws rds describe-db-instances --db-instance-identifier "$DBI" >/dev/null 2>&1; then
+215:             aws rds modify-db-instance \
+216:               --db-instance-identifier "$DBI" \
+217:               --no-deletion-protection \
+218:               --apply-immediately >/dev/null
+219:             # Wait up to ~30 min for available; ignore terminal failures.
+220:             aws rds wait db-instance-available \
+221:               --db-instance-identifier "$DBI" || true
+222:           else
+223:             echo "RDS instance $DBI not present"
+224:           fi
+225:           # Purge any retained automated backups for this DBI. delete_automated_backups
+226:           # only fires inside DeleteDBInstance; orphans from earlier runs need this.
+227:           aws rds describe-db-instance-automated-backups \
+228:             --query "DBInstanceAutomatedBackups[?DBInstanceIdentifier=='$DBI'].DBInstanceAutomatedBackupsArn" \
+229:             --output text | tr '\t' '\n' | while read -r ARN; do
+230:               [ -z "$ARN" ] && continue
+231:               echo "deleting orphan automated backup $ARN"
+232:               aws rds delete-db-instance-automated-backup \
+233:                 --db-instance-automated-backups-arn "$ARN" || true
+234:             done
+235:       - name: terraform destroy
+236:         working-directory: infra/envs/prod
+237:         env:
+238:           TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+239:           TF_VAR_deployment_account_id: ${{ vars.DEPLOYMENT_ACCOUNT_ID }}
+240:           TF_VAR_domain_account_id: ${{ vars.DOMAIN_ACCOUNT_ID }}
+241:           TF_VAR_domain_account_route53_role_arn: ${{ secrets.DOMAIN_ROUTE53_ROLE_ARN }}
+242:           TF_VAR_hosted_zone_id: ${{ vars.HOSTED_ZONE_ID }}
+243:           TF_VAR_acm_certificate_arn: ${{ secrets.ACM_CERTIFICATE_ARN }}
+244:           TF_VAR_rds_deletion_protection: "false"
+245:           TF_VAR_rds_skip_final_snapshot: "true"
+246:           TF_VAR_rds_delete_automated_backups: "true"
+247:           TF_VAR_alb_logs_force_destroy: "true"
+248:         run: |
+249:           terraform destroy -input=false -auto-approve
+````
+
+## File: infra/envs/prod/rds.tf
+````hcl
+  1: ###############################################################################
+  2: # RDS MySQL (private, Multi-AZ, encrypted)
+  3: #
+  4: # - Master password managed by RDS in Secrets Manager (rotated by AWS).
+  5: # - App user is created by Flyway with credentials from Secrets Manager.
+  6: # - Backups, deletion protection, performance insights, and slow-query logs
+  7: #   are enabled per TR-DB-001..008.
+  8: ###############################################################################
+  9: 
+ 10: resource "aws_db_parameter_group" "mysql" {
+ 11:   name        = "${local.name_prefix}-mysql8"
+ 12:   family      = "mysql8.0"
+ 13:   description = "Custom MySQL 8.0 parameter group"
+ 14: 
+ 15:   # UTF-8 across the board
+ 16:   parameter {
+ 17:     name  = "character_set_server"
+ 18:     value = "utf8mb4"
+ 19:   }
+ 20:   parameter {
+ 21:     name  = "collation_server"
+ 22:     value = "utf8mb4_0900_ai_ci"
+ 23:   }
+ 24: 
+ 25:   # Slow query logging
+ 26:   parameter {
+ 27:     name         = "slow_query_log"
+ 28:     value        = "1"
+ 29:     apply_method = "immediate"
+ 30:   }
+ 31:   parameter {
+ 32:     name         = "long_query_time"
+ 33:     value        = "1"
+ 34:     apply_method = "immediate"
+ 35:   }
+ 36:   parameter {
+ 37:     name         = "log_output"
+ 38:     value        = "FILE"
+ 39:     apply_method = "immediate"
+ 40:   }
+ 41: 
+ 42:   # Connection sizing - tune as load grows
+ 43:   parameter {
+ 44:     name         = "max_connections"
+ 45:     value        = "200"
+ 46:     apply_method = "pending-reboot"
+ 47:   }
+ 48: 
+ 49:   tags = local.common_tags
+ 50: }
+ 51: 
+ 52: module "rds" {
+ 53:   source  = "terraform-aws-modules/rds/aws"
+ 54:   version = "~> 6.10"
+ 55: 
+ 56:   identifier = "${local.name_prefix}-mysql"
+ 57: 
+ 58:   engine               = "mysql"
+ 59:   engine_version       = var.rds_engine_version
+ 60:   family               = "mysql8.0"
+ 61:   major_engine_version = "8.0"
+ 62:   instance_class       = var.rds_instance_class
+ 63: 
+ 64:   allocated_storage     = var.rds_allocated_storage_gb
+ 65:   max_allocated_storage = var.rds_max_allocated_storage_gb
+ 66:   storage_type          = "gp3"
+ 67:   storage_encrypted     = true
+ 68:   kms_key_id            = aws_kms_key.app_secrets.arn
+ 69: 
+ 70:   db_name  = var.db_name
+ 71:   username = "dbadmin" # master user; password is RDS-managed below
+ 72:   port     = local.db_port
+ 73: 
+ 74:   # RDS-managed master password in Secrets Manager (rotated by AWS).
+ 75:   manage_master_user_password             = true
+ 76:   master_user_secret_kms_key_id           = aws_kms_key.app_secrets.arn
+ 77:   master_user_password_rotate_immediately = false
+ 78: 
+ 79:   multi_az               = true
+ 80:   publicly_accessible    = false
+ 81:   vpc_security_group_ids = [aws_security_group.rds.id]
+ 82:   db_subnet_group_name   = module.vpc.database_subnet_group_name
+ 83: 
+ 84:   backup_retention_period          = 14
+ 85:   backup_window                    = "03:00-04:00"
+ 86:   maintenance_window               = "Sun:04:30-Sun:05:30"
+ 87:   deletion_protection              = var.rds_deletion_protection
+ 88:   delete_automated_backups         = var.rds_delete_automated_backups
+ 89:   skip_final_snapshot              = var.rds_skip_final_snapshot
+ 90:   final_snapshot_identifier_prefix = "${local.name_prefix}-mysql-final"
+ 91: 
+ 92:   # Use the AWS-managed default option group. Custom option groups are the
+ 93:   # only kind that can wedge a destroy via retained snapshots/backups; we
+ 94:   # have no MySQL options to set (everything tunable for our workload lives
+ 95:   # in aws_db_parameter_group.mysql), so the default OG is sufficient and
+ 96:   # cannot be lockup-blocked.
+ 97:   create_db_option_group = false
+ 98:   option_group_name      = "default:mysql-8-0"
+ 99: 
+100:   performance_insights_enabled          = true
+101:   performance_insights_retention_period = 7
+102: 
+103:   monitoring_interval    = 60
+104:   create_monitoring_role = true
+105:   monitoring_role_name   = "${local.name_prefix}-rds-monitoring"
+106: 
+107:   # Use the parameter group we manage outside the module (above).
+108:   parameter_group_name            = aws_db_parameter_group.mysql.name
+109:   create_db_parameter_group       = false
+110:   enabled_cloudwatch_logs_exports = ["error", "general", "slowquery"]
+111: 
+112:   tags = local.common_tags
+113: }
+114: 
+115: # Expose the DB endpoint to user-data via SSM (non-secret).
+116: resource "aws_ssm_parameter" "db_endpoint" {
+117:   name  = local.ssm_keys.db_endpoint
+118:   type  = "String"
+119:   value = module.rds.db_instance_address
+120: }
+121: 
+122: resource "aws_ssm_parameter" "db_name" {
+123:   name  = local.ssm_keys.db_name
+124:   type  = "String"
+125:   value = var.db_name
+126: }
+````
+
+## File: .github/workflows/infra-apply.yml
+````yaml
+  1: name: infra-apply
+  2: on:
+  3:   workflow_dispatch:
+  4:     inputs:
+  5:       purge_pending_secrets:
+  6:         description: >
+  7:           Force-delete any Secrets Manager secrets at the project's well-known
+  8:           paths that are currently in PendingDeletion state. Use only when a
+  9:           re-apply after `terraform destroy` is blocked by the 7-day recovery
+ 10:           window. Safe to enable: skips healthy secrets.
+ 11:         type: boolean
+ 12:         required: false
+ 13:         default: false
+ 14: permissions:
+ 15:   id-token: write
+ 16:   contents: read
+ 17: concurrency:
+ 18:   group: infra-apply
+ 19:   cancel-in-progress: false
+ 20: jobs:
+ 21:   apply:
+ 22:     runs-on: ubuntu-latest
+ 23:     environment: prod
+ 24:     steps:
+ 25:       - uses: actions/checkout@v4
+ 26:       # Ensures `aws` is on PATH. GitHub-hosted ubuntu-latest already ships
+ 27:       # AWS CLI v2; nektos/act's default medium image does not. Idempotent:
+ 28:       # if `aws` is already present we just print the version and exit.
+ 29:       - name: Ensure AWS CLI present
+ 30:         shell: bash
+ 31:         run: |
+ 32:           set -euo pipefail
+ 33:           if command -v aws >/dev/null 2>&1; then
+ 34:             aws --version
+ 35:             exit 0
+ 36:           fi
+ 37:           tmp=$(mktemp -d)
+ 38:           curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "$tmp/awscliv2.zip"
+ 39:           unzip -q "$tmp/awscliv2.zip" -d "$tmp"
+ 40:           sudo "$tmp/aws/install" --update
+ 41:           aws --version
+ 42:       - uses: aws-actions/configure-aws-credentials@v4
+ 43:         with:
+ 44:           role-to-assume: ${{ secrets.DEPLOYMENT_ROLE_ARN }}
+ 45:           aws-region: ${{ vars.AWS_REGION }}
+ 46:           role-session-name: gha-infra-apply
+ 47:       - uses: hashicorp/setup-terraform@v3
+ 48:         with:
+ 49:           terraform_version: 1.9.8
+ 50:       # Opt-in: purge any project secrets stuck in PendingDeletion. Runs only
+ 51:       # when the workflow is dispatched with `purge_pending_secrets=true`.
+ 52:       # See .github/scripts/purge_pending_secrets.sh for the rationale.
+ 53:       - name: Purge pending-deletion secrets (opt-in)
+ 54:         if: ${{ inputs.purge_pending_secrets == 'true' }}
+ 55:         run: |
+ 56:           chmod +x .github/scripts/purge_pending_secrets.sh
+ 57:           .github/scripts/purge_pending_secrets.sh
+ 58:       # Pre-create AWS Service-Linked Roles before Terraform runs.
+ 59:       # SLRs are account-wide singletons that Terraform does not manage; the
+ 60:       # AWS API returns InvalidInput if they already exist, which `|| true`
+ 61:       # swallows for idempotency. This eliminates the historical race where
+ 62:       # ASG capacity validation fired before AWS auto-created the SLR.
+ 63:       - name: Ensure AWS service-linked roles exist
+ 64:         run: |
+ 65:           set -euo pipefail
+ 66:           for SVC in autoscaling.amazonaws.com elasticloadbalancing.amazonaws.com; do
+ 67:             if out=$(aws iam create-service-linked-role --aws-service-name "$SVC" 2>&1); then
+ 68:               echo "Created SLR for $SVC"
+ 69:             else
+ 70:               # Tolerate "already exists" only; surface anything else.
+ 71:               if echo "$out" | grep -qiE 'has been taken in this account|already exists'; then
+ 72:                 echo "SLR for $SVC already exists; skipping."
+ 73:               else
+ 74:                 echo "$out" >&2
+ 75:                 exit 1
+ 76:               fi
+ 77:             fi
+ 78:           done
+ 79:       - name: init
+ 80:         working-directory: infra/envs/prod
+ 81:         run: |
+ 82:           terraform init \
+ 83:             -backend-config="bucket=java-app-tfstate-${{ vars.DEPLOYMENT_ACCOUNT_ID }}-${{ vars.AWS_REGION }}" \
+ 84:             -backend-config="region=${{ vars.AWS_REGION }}"
+ 85:       - name: plan
+ 86:         working-directory: infra/envs/prod
+ 87:         env:
+ 88:           TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+ 89:           TF_VAR_deployment_account_id: ${{ vars.DEPLOYMENT_ACCOUNT_ID }}
+ 90:           TF_VAR_domain_account_id: ${{ vars.DOMAIN_ACCOUNT_ID }}
+ 91:           TF_VAR_domain_account_route53_role_arn: ${{ secrets.DOMAIN_ROUTE53_ROLE_ARN }}
+ 92:           TF_VAR_hosted_zone_id: ${{ vars.HOSTED_ZONE_ID }}
+ 93:           TF_VAR_acm_certificate_arn: ${{ secrets.ACM_CERTIFICATE_ARN }}
+ 94:         run: terraform plan -input=false -out=tfplan
+ 95:       - name: apply
+ 96:         working-directory: infra/envs/prod
+ 97:         run: terraform apply -input=false -auto-approve tfplan
+ 98:       - name: outputs
+ 99:         working-directory: infra/envs/prod
+100:         run: terraform output -no-color
+101:       - name: Upload compose file to S3 (compose-object pointer)
+102:         env:
+103:           AWS_REGION: ${{ vars.AWS_REGION }}
+104:           # AWS CLI v2 pipes JSON through `less` by default. Act's medium
+105:           # image has no `less`, causing exit 253. Empty value disables pager.
+106:           AWS_PAGER: ""
+107:         run: |
+108:           BUCKET="java-app-prod-config-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
+109:           # Best-effort - bucket may already exist from a prior run.
+110:           aws s3api create-bucket --bucket "$BUCKET" --region "$AWS_REGION" 2>/dev/null || true
+111:           aws s3api put-public-access-block --bucket "$BUCKET" \
+112:             --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+113:           aws s3 cp app/docker/docker-compose.prod.yml "s3://$BUCKET/docker-compose.prod.yml"
+114:           aws ssm put-parameter --name "/java-app/prod/compose-object" \
+115:             --type String --overwrite \
+116:             --value "s3://$BUCKET/docker-compose.prod.yml"
 ````
 
 ## File: infra/envs/prod/alb.tf
@@ -7006,170 +7492,37 @@ repomix.config.json
 193:     }
 194:   }
 195: 
-196:   # Ensure the ELB SLR is in place before creating the ALB.
-197:   depends_on = [aws_iam_service_linked_role.elb]
-198: 
-199:   target_groups = {
-200:     app = {
-201:       name                 = "${local.name_prefix}-tg"
-202:       backend_protocol     = "HTTP"
-203:       backend_port         = local.app_port
-204:       target_type          = "instance"
-205:       deregistration_delay = 30
-206:       protocol_version     = "HTTP1"
+196:   target_groups = {
+197:     app = {
+198:       name                 = "${local.name_prefix}-tg"
+199:       backend_protocol     = "HTTP"
+200:       backend_port         = local.app_port
+201:       target_type          = "instance"
+202:       deregistration_delay = 30
+203:       protocol_version     = "HTTP1"
+204: 
+205:       # Don't auto-register - the ASG handles target registration.
+206:       create_attachment = false
 207: 
-208:       # Don't auto-register - the ASG handles target registration.
-209:       create_attachment = false
-210: 
-211:       health_check = {
-212:         enabled             = true
-213:         path                = "/actuator/health"
-214:         protocol            = "HTTP"
-215:         port                = "traffic-port"
-216:         matcher             = "200"
-217:         healthy_threshold   = 2
-218:         unhealthy_threshold = 3
-219:         interval            = 15
-220:         timeout             = 5
-221:       }
-222: 
-223:       stickiness = {
-224:         enabled = false
-225:         type    = "lb_cookie"
-226:       }
-227:     }
-228:   }
-229: 
-230:   tags = local.common_tags
-231: }
-````
-
-## File: infra/envs/prod/rds.tf
-````hcl
-  1: ###############################################################################
-  2: # RDS MySQL (private, Multi-AZ, encrypted)
-  3: #
-  4: # - Master password managed by RDS in Secrets Manager (rotated by AWS).
-  5: # - App user is created by Flyway with credentials from Secrets Manager.
-  6: # - Backups, deletion protection, performance insights, and slow-query logs
-  7: #   are enabled per TR-DB-001..008.
-  8: ###############################################################################
-  9: 
- 10: resource "aws_db_parameter_group" "mysql" {
- 11:   name        = "${local.name_prefix}-mysql8"
- 12:   family      = "mysql8.0"
- 13:   description = "Custom MySQL 8.0 parameter group"
- 14: 
- 15:   # UTF-8 across the board
- 16:   parameter {
- 17:     name  = "character_set_server"
- 18:     value = "utf8mb4"
- 19:   }
- 20:   parameter {
- 21:     name  = "collation_server"
- 22:     value = "utf8mb4_0900_ai_ci"
- 23:   }
- 24: 
- 25:   # Slow query logging
- 26:   parameter {
- 27:     name         = "slow_query_log"
- 28:     value        = "1"
- 29:     apply_method = "immediate"
- 30:   }
- 31:   parameter {
- 32:     name         = "long_query_time"
- 33:     value        = "1"
- 34:     apply_method = "immediate"
- 35:   }
- 36:   parameter {
- 37:     name         = "log_output"
- 38:     value        = "FILE"
- 39:     apply_method = "immediate"
- 40:   }
- 41: 
- 42:   # Connection sizing - tune as load grows
- 43:   parameter {
- 44:     name         = "max_connections"
- 45:     value        = "200"
- 46:     apply_method = "pending-reboot"
- 47:   }
- 48: 
- 49:   tags = local.common_tags
- 50: }
- 51: 
- 52: module "rds" {
- 53:   source  = "terraform-aws-modules/rds/aws"
- 54:   version = "~> 6.10"
- 55: 
- 56:   identifier = "${local.name_prefix}-mysql"
- 57: 
- 58:   engine               = "mysql"
- 59:   engine_version       = var.rds_engine_version
- 60:   family               = "mysql8.0"
- 61:   major_engine_version = "8.0"
- 62:   instance_class       = var.rds_instance_class
- 63: 
- 64:   allocated_storage     = var.rds_allocated_storage_gb
- 65:   max_allocated_storage = var.rds_max_allocated_storage_gb
- 66:   storage_type          = "gp3"
- 67:   storage_encrypted     = true
- 68:   kms_key_id            = aws_kms_key.app_secrets.arn
- 69: 
- 70:   db_name  = var.db_name
- 71:   username = "dbadmin" # master user; password is RDS-managed below
- 72:   port     = local.db_port
- 73: 
- 74:   # RDS-managed master password in Secrets Manager (rotated by AWS).
- 75:   manage_master_user_password             = true
- 76:   master_user_secret_kms_key_id           = aws_kms_key.app_secrets.arn
- 77:   master_user_password_rotate_immediately = false
- 78: 
- 79:   multi_az               = true
- 80:   publicly_accessible    = false
- 81:   vpc_security_group_ids = [aws_security_group.rds.id]
- 82:   db_subnet_group_name   = module.vpc.database_subnet_group_name
- 83: 
- 84:   backup_retention_period          = 14
- 85:   backup_window                    = "03:00-04:00"
- 86:   maintenance_window               = "Sun:04:30-Sun:05:30"
- 87:   deletion_protection              = var.rds_deletion_protection
- 88:   delete_automated_backups         = var.rds_delete_automated_backups
- 89:   skip_final_snapshot              = var.rds_skip_final_snapshot
- 90:   final_snapshot_identifier_prefix = "${local.name_prefix}-mysql-final"
- 91: 
- 92:   # Use the AWS-managed default option group. Custom option groups are the
- 93:   # only kind that can wedge a destroy via retained snapshots/backups; we
- 94:   # have no MySQL options to set (everything tunable for our workload lives
- 95:   # in aws_db_parameter_group.mysql), so the default OG is sufficient and
- 96:   # cannot be lockup-blocked.
- 97:   create_db_option_group = false
- 98:   option_group_name      = "default:mysql-8-0"
- 99: 
-100:   performance_insights_enabled          = true
-101:   performance_insights_retention_period = 7
-102: 
-103:   monitoring_interval    = 60
-104:   create_monitoring_role = true
-105:   monitoring_role_name   = "${local.name_prefix}-rds-monitoring"
-106: 
-107:   # Use the parameter group we manage outside the module (above).
-108:   parameter_group_name            = aws_db_parameter_group.mysql.name
-109:   create_db_parameter_group       = false
-110:   enabled_cloudwatch_logs_exports = ["error", "general", "slowquery"]
-111: 
-112:   tags = local.common_tags
-113: }
-114: 
-115: # Expose the DB endpoint to user-data via SSM (non-secret).
-116: resource "aws_ssm_parameter" "db_endpoint" {
-117:   name  = local.ssm_keys.db_endpoint
-118:   type  = "String"
-119:   value = module.rds.db_instance_address
-120: }
-121: 
-122: resource "aws_ssm_parameter" "db_name" {
-123:   name  = local.ssm_keys.db_name
-124:   type  = "String"
-125:   value = var.db_name
-126: }
+208:       health_check = {
+209:         enabled             = true
+210:         path                = "/actuator/health"
+211:         protocol            = "HTTP"
+212:         port                = "traffic-port"
+213:         matcher             = "200"
+214:         healthy_threshold   = 2
+215:         unhealthy_threshold = 3
+216:         interval            = 15
+217:         timeout             = 5
+218:       }
+219: 
+220:       stickiness = {
+221:         enabled = false
+222:         type    = "lb_cookie"
+223:       }
+224:     }
+225:   }
+226: 
+227:   tags = local.common_tags
+228: }
 ````
