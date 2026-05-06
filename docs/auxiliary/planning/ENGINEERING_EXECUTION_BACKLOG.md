@@ -462,12 +462,12 @@ without tribal knowledge.
 Acceptance tests:
 
 - Required documents exist:
-  - `00-prerequisites.md`
-  - `01-bootstrap-state.md`
-  - `02-domain-account-dns.md`
-  - `03-deployment.md`
-  - `04-operations.md`
-  - `05-security-model.md`
+  - `docs/auxiliary/operations_guide/00-prerequisites.md`
+  - `docs/auxiliary/operations_guide/01-bootstrap-state.md`
+  - `docs/auxiliary/operations_guide/02-domain-account-dns.md`
+  - `docs/auxiliary/operations_guide/03-deployment.md`
+  - `docs/auxiliary/operations_guide/04-operations.md`
+  - `docs/auxiliary/operations_guide/05-security-model.md`
   - `README.md`
 - Documents are internally consistent with actual workflows.
 

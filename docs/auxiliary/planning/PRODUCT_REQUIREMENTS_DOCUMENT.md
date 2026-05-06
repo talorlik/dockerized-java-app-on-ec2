@@ -2,7 +2,7 @@
 
 ## 1. Document Control
 
-- Product: Java Signup Platform on AWS
+- Product: Dockerized Java App Deployment Reference on AWS EC2
 - Version: 1.0
 - Status: Draft
 - Source: `docs/auxiliary/planning/PROJECT_OVERVIEW.md`
@@ -11,9 +11,10 @@
 
 ## 2. Product Overview
 
-The platform provides a public signup and authentication application with an
-admin console for managing registrants. It runs on AWS with stateless compute,
-containerized frontend/backend services, and a shared managed MySQL database.
+This project provides a reference implementation for deploying Dockerized Java
+applications on AWS EC2 with production-shaped infrastructure and operations.
+The included signup and admin application is a sample workload used to validate
+the deployment pattern end-to-end.
 
 The system must be deployable by another engineer with minimal hidden
 assumptions and complete operational documentation.
@@ -22,7 +23,7 @@ assumptions and complete operational documentation.
 
 ### 3.1 Business Objectives
 
-- Provide a secure, production-capable signup platform.
+- Provide a secure, production-capable Dockerized Java app deployment pattern.
 - Enable repeatable infrastructure and app deployment through CI/CD.
 - Ensure operations can monitor, diagnose, and recover the platform.
 - Support cross-account DNS and domain ownership patterns.

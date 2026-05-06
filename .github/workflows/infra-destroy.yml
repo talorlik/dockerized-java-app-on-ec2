@@ -173,31 +173,25 @@ jobs:
           done
 
       # -------------------------------------------------------------------
-      # 5. Terraform init, then state surgery + RDS prep, then destroy.
+      # 5. Terraform init, then RDS prep, then destroy.
       # -------------------------------------------------------------------
+      # Pre-create AWS Service-Linked Roles. They are no longer managed by
+      # Terraform, but covering the case where someone deleted them
+      # out-of-band keeps `terraform plan -destroy` from failing on missing
+      # IAM principals referenced by leftover ASG/ALB resources.
+      - name: Ensure AWS service-linked roles exist
+        run: |
+          set -euo pipefail
+          for SVC in autoscaling.amazonaws.com elasticloadbalancing.amazonaws.com; do
+            aws iam create-service-linked-role --aws-service-name "$SVC" 2>/dev/null || true
+          done
+
       - name: terraform init
         working-directory: infra/envs/prod
         run: |
           terraform init \
             -backend-config="bucket=java-app-tfstate-${{ vars.DEPLOYMENT_ACCOUNT_ID }}-${{ vars.AWS_REGION }}" \
             -backend-config="region=${{ vars.AWS_REGION }}"
-
-      # Detach service-linked roles from state. They are account-wide and
-      # AWS recreates them automatically on next ALB / ASG creation; deleting
-      # them here is unsafe and racy with ALB destroy.
-      - name: Detach service-linked roles from state
-        working-directory: infra/envs/prod
-        run: |
-          set -euo pipefail
-          for ADDR in \
-              aws_iam_service_linked_role.elb \
-              aws_iam_service_linked_role.autoscaling; do
-            if terraform state list | grep -qx "$ADDR"; then
-              terraform state rm "$ADDR"
-            else
-              echo "$ADDR not in state, skipping"
-            fi
-          done
 
       # Disable RDS deletion protection imperatively, let any in-flight
       # modify settle, and purge orphan retained automated backups left

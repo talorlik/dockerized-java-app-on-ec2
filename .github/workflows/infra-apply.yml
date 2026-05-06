@@ -28,6 +28,18 @@ jobs:
         with:
           terraform_version: 1.9.8
 
+      # Pre-create AWS Service-Linked Roles before Terraform runs.
+      # SLRs are account-wide singletons that Terraform does not manage; the
+      # AWS API returns InvalidInput if they already exist, which `|| true`
+      # swallows for idempotency. This eliminates the historical race where
+      # ASG capacity validation fired before AWS auto-created the SLR.
+      - name: Ensure AWS service-linked roles exist
+        run: |
+          set -euo pipefail
+          for SVC in autoscaling.amazonaws.com elasticloadbalancing.amazonaws.com; do
+            aws iam create-service-linked-role --aws-service-name "$SVC" 2>/dev/null || true
+          done
+
       - name: init
         working-directory: infra/envs/prod
         run: |

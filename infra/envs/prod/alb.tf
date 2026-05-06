@@ -193,9 +193,6 @@ module "alb" {
     }
   }
 
-  # Ensure the ELB SLR is in place before creating the ALB.
-  depends_on = [aws_iam_service_linked_role.elb]
-
   target_groups = {
     app = {
       name                 = "${local.name_prefix}-tg"

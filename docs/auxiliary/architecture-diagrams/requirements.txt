@@ -1,0 +1,8 @@
+# Architecture diagram generation (SETUP.md)
+# Install: pip install -r requirements.txt
+# macOS: install pygraphviz separately with brew paths (see SETUP.md)
+
+pygraphviz>=1.11
+diagrams>=0.25
+graphviz>=0.20
+graphviz2drawio>=1.1

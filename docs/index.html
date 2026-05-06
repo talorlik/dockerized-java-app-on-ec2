@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dockerized Java App on EC2 - Documentation</title>
+  <meta name="description" content="Project documentation for deploying Dockerized Java applications on AWS EC2, including architecture, deployment, operations, security, and ADRs.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Dockerized Java App on EC2 - Documentation">
+  <meta property="og:description" content="Production-shaped Dockerized Java deployment reference with Terraform IaC and GitHub Actions CI/CD.">
+  <meta property="og:image" content="https://github.com/talorlik/dockerized-java-app-on-ec2/raw/main/docs/header_banner.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Dockerized Java App on EC2 - Documentation">
+  <meta name="twitter:description" content="Architecture, deployment, operations, and security documentation for the project.">
+  <meta name="twitter:image" content="https://github.com/talorlik/dockerized-java-app-on-ec2/raw/main/docs/header_banner.png">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link id="theme-stylesheet" rel="stylesheet" href="light-theme.css">
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="#hero" class="nav-logo">Dockerized Java App Docs</a>
+      <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle navigation menu">☰</button>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#getting-started">Getting Started</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#documentation">Documentation</a></li>
+        <li><a href="#operations">Operations</a></li>
+        <li><a href="#security">Security</a></li>
+        <li><a href="#repository">Repository</a></li>
+        <li>
+          <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
+            <span id="sunIcon" class="icon hidden">☀️</span>
+            <span id="moonIcon" class="icon">🌙</span>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <main id="main-content">
+    <section id="hero" class="hero">
+      <h1>Dockerized Java App on EC2</h1>
+      <p>
+        Production-shaped reference implementation for deploying Dockerized Java
+        applications on EC2 Auto Scaling behind an ALB, with RDS MySQL,
+        Terraform infrastructure, and GitHub Actions delivery workflows. The
+        signup app included here is a sample workload.
+      </p>
+      <img src="header_banner.png" alt="Dockerized Java app architecture banner" class="hero-banner">
+    </section>
+
+    <section id="overview">
+      <h2>Overview</h2>
+      <div class="doc-grid">
+        <article class="card">
+          <h3>What This Project Includes</h3>
+          <ul>
+            <li>Spring Boot backend with JWT auth, RBAC, and Flyway migrations</li>
+            <li>Nginx frontend container proxying <code>/api/*</code> to backend</li>
+            <li>Private RDS MySQL (central shared DB) with stateless EC2 compute</li>
+            <li>Terraform-managed AWS foundation across deployment and domain accounts</li>
+            <li>GitHub Actions OIDC delivery with ASG Instance Refresh rollout</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Target Runtime Topology</h3>
+          <p>
+            Ingress path: Internet -&gt; Route53 alias -&gt; ALB HTTPS listener -&gt;
+            EC2 ASG private subnets -&gt; Docker Compose frontend/backend -&gt; RDS MySQL.
+          </p>
+          <p>
+            Primary endpoint: <code>https://java.talorlik.com</code>.
+            Operations and architecture details are aligned with
+            <code>PROJECT_OVERVIEW.md</code>, PRD, and Technical Requirements docs.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="getting-started">
+      <h2>Getting Started</h2>
+      <div class="doc-grid">
+        <article class="card">
+          <h3>Prerequisites Checklist</h3>
+          <ul>
+            <li>DEPLOYMENT account for ALB, EC2/ASG, RDS, ECR, IAM, Secrets Manager, and ACM</li>
+            <li>DOMAIN account (or same account) hosting Route53 zone for <code>talorlik.com</code></li>
+            <li><code>DEPLOYMENT_ROLE_ARN</code> with GitHub OIDC trust configured</li>
+            <li><code>DOMAIN_ROUTE53_ROLE_ARN</code> allowing DNS record updates (when cross-account)</li>
+            <li>ACM certificate in DEPLOYMENT account for <code>java.talorlik.com</code></li>
+            <li>GitHub variables: <code>AWS_REGION</code>, <code>DEPLOYMENT_ACCOUNT_ID</code>, <code>DOMAIN_ACCOUNT_ID</code>, <code>HOSTED_ZONE_ID</code></li>
+            <li>GitHub secrets: <code>ACM_CERTIFICATE_ARN</code>, <code>DEPLOYMENT_ROLE_ARN</code>, <code>DOMAIN_ROUTE53_ROLE_ARN</code></li>
+            <li>GitHub Environment named <code>prod</code> for apply/destroy workflows</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Deploy From Scratch</h3>
+          <ol>
+            <li>Complete one-time prerequisites from <code>README.md</code>: DEPLOYMENT account, DOMAIN account role chain, ACM cert, GitHub vars/secrets, and <code>prod</code> environment.</li>
+            <li>Bootstrap remote Terraform state in <code>infra/bootstrap</code> and copy the backend block output into <code>infra/envs/prod/backend.tf</code>.</li>
+            <li>Optionally run <code>infra-plan.yml</code>, then run <code>infra-apply.yml</code> to provision VPC, ALB, ASG, RDS, ECR, IAM, Route53, and observability resources.</li>
+            <li>Run <code>app-deploy.yml</code> to execute CI gates, push SHA-tagged images to ECR, update SSM release pointers, and trigger ASG instance refresh.</li>
+            <li>Retrieve first admin credentials from Secrets Manager and sign in.</li>
+          </ol>
+        </article>
+        <article class="card">
+          <h3>Deploy Commands</h3>
+          <pre><code># 1) Bootstrap state (local, one-shot)
+cd infra/bootstrap
+export AWS_REGION=us-east-1
+terraform init
+terraform apply -var aws_region=us-east-1 -var state_bucket_name="java-app-tfstate-&lt;DEPLOYMENT_ACCOUNT_ID&gt;-us-east-1"
+terraform output backend_block_example
+
+# 2) (Optional) Terraform plan workflow
+gh workflow run infra-plan.yml
+gh run watch
+
+# 3) Apply infrastructure
+gh workflow run infra-apply.yml
+gh run watch
+
+# 4) Deploy app images + refresh ASG
+gh workflow run app-deploy.yml
+gh run watch</code></pre>
+        </article>
+        <article class="card">
+          <h3>Destroy Stack (Reverse Order)</h3>
+          <p>
+            Destroy follows the README sequence. Both workflow-based destroy paths require
+            the exact confirmation value <code>DESTROY</code>.
+          </p>
+          <pre><code># 1) Tear down application layer
+gh workflow run app-destroy.yml -f confirm=DESTROY
+gh run watch
+
+# 2) Tear down production infrastructure
+gh workflow run infra-destroy.yml -f confirm=DESTROY -f run_app_cleanup=true
+gh run watch</code></pre>
+          <p>
+            Optional: remove <code>infra/bootstrap</code> resources only when decommissioning
+            the project completely.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="architecture">
+      <h2>Architecture</h2>
+      <div class="card">
+        <p>
+          Route53 aliases <code>java.talorlik.com</code> to an internet-facing ALB.
+          The ALB forwards to EC2 instances in an Auto Scaling Group, where
+          frontend and backend containers run via Docker Compose. The backend
+          connects to private RDS MySQL, and secrets are sourced from AWS
+          Secrets Manager.
+        </p>
+      </div>
+      <div class="card">
+        <h3>Key Paths</h3>
+        <ul>
+          <li><code>app/backend/</code> - Spring Boot application</li>
+          <li><code>app/frontend/</code> - static frontend and Nginx config</li>
+          <li><code>app/docker/</code> - local and prod compose files</li>
+          <li><code>infra/envs/prod/</code> - production Terraform environment</li>
+          <li><code>.github/workflows/</code> - CI/CD pipelines</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="documentation">
+      <h2>Documentation</h2>
+      <div class="doc-grid">
+        <article class="card">
+          <h3>Operator Guides</h3>
+          <ul>
+            <li><a href="auxiliary/operations_guide/00-prerequisites.md">00 - Prerequisites</a></li>
+            <li><a href="auxiliary/operations_guide/01-bootstrap-state.md">01 - Bootstrap State</a></li>
+            <li><a href="auxiliary/operations_guide/02-domain-account-dns.md">02 - Domain Account DNS</a></li>
+            <li><a href="auxiliary/operations_guide/03-deployment.md">03 - Deployment</a></li>
+            <li><a href="auxiliary/operations_guide/04-operations.md">04 - Operations</a></li>
+            <li><a href="auxiliary/operations_guide/05-security-model.md">05 - Security Model</a></li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Planning Documents</h3>
+          <ul>
+            <li><a href="auxiliary/planning/PROJECT_OVERVIEW.md">Project Overview</a></li>
+            <li><a href="auxiliary/planning/PRODUCT_REQUIREMENTS_DOCUMENT.md">Product Requirements</a></li>
+            <li><a href="auxiliary/planning/TECHNICAL_REQUIREMENTS_REFERENCE.md">Technical Requirements</a></li>
+            <li><a href="auxiliary/planning/ENGINEERING_EXECUTION_BACKLOG.md">Engineering Backlog</a></li>
+            <li><a href="auxiliary/planning/INITIAL_HL_DESCRIPTION.md">Initial High-Level Description</a></li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Architecture Decision Records</h3>
+          <ul>
+            <li><a href="auxiliary/adr/0001-frontend-stack.md">ADR 0001 - Frontend Stack</a></li>
+            <li><a href="auxiliary/adr/0002-auth-model.md">ADR 0002 - Auth Model</a></li>
+            <li><a href="auxiliary/adr/0003-waf.md">ADR 0003 - WAF</a></li>
+            <li><a href="auxiliary/adr/0004-ubuntu-resolution.md">ADR 0004 - Ubuntu Resolution</a></li>
+            <li><a href="auxiliary/adr/0005-secret-rotation.md">ADR 0005 - Secret Rotation</a></li>
+            <li><a href="auxiliary/adr/0006-provider-account-model.md">ADR 0006 - Provider Account Model</a></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="operations">
+      <h2>Operations</h2>
+      <div class="doc-grid">
+        <article class="card">
+          <h3>Release Workflow</h3>
+          <ul>
+            <li><code>ci.yml</code> gates backend tests, compose smoke, e2e, and Terraform checks</li>
+            <li><code>infra-plan.yml</code> produces plan artifacts for infrastructure changes</li>
+            <li><code>infra-apply.yml</code> applies production infrastructure and config object wiring</li>
+            <li><code>app-deploy.yml</code> publishes immutable SHA image tags and rolls ASG safely</li>
+            <li><code>app-destroy.yml</code> and <code>infra-destroy.yml</code> execute controlled teardown</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Notes</h3>
+          <p>
+            Image tags are release-specific. The deployment model updates SSM
+            image tag parameters and performs launch-before-terminate refreshes.
+          </p>
+          <p>
+            Health checks are performed after deployment to verify application
+            readiness.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="security">
+      <h2>Security</h2>
+      <div class="card">
+        <ul>
+          <li>No public RDS access; DB lives in private subnets only</li>
+          <li>EC2 access uses SSM Session Manager, not SSH ingress</li>
+          <li>Secrets are stored in Secrets Manager, never committed in repo</li>
+          <li>WAF is attached to ALB with managed rule groups and rate limiting</li>
+          <li>IMDSv2 and least-privilege IAM are part of the baseline model</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="repository">
+      <h2>Repository</h2>
+      <div class="card">
+        <p>
+          GitHub: <a href="https://github.com/talorlik/dockerized-java-app-on-ec2" target="_blank" rel="noopener noreferrer">talorlik/dockerized-java-app-on-ec2</a>
+        </p>
+        <p>
+          Root README: <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/README.md" target="_blank" rel="noopener noreferrer">README.md</a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p><strong>Dockerized Java App Documentation</strong></p>
+    <p>Copyright (c) Tal Orlik</p>
+  </footer>
+
+  <button id="scrollToTopButton" class="scroll-to-top" aria-label="Scroll to top" title="Scroll to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <path d="M18 15l-6-6-6 6"></path>
+    </svg>
+  </button>
+
+  <script src="main.js"></script>
+</body>
+</html>

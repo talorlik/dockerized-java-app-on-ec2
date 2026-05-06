@@ -1,0 +1,50 @@
+# IDEs and Editors
+.cursor/
+.vscode/
+.idea/
+.DS_Store
+
+# Sensitive/Security
+.env
+*.pem
+*.csr
+*.json
+# Keep the config so the AI knows the packaging logic
+!repomix.config.json
+
+# Terraform Clutter
+**/.terraform/*
+**/.terraform.*
+**/.terraform.lock.hcl
+**/*.tfstate
+**/*.tfstate.*
+**/*.plan
+**/*.tfplan
+**/.terraform.tfstate.lock.info
+**/*.tfvars
+**/*.tfvars.json
+
+# Tooling/Caches
+.repomixignore
+repomix-output.md
+node_modules/
+
+# Diagrams and images (referenced separately, e.g. NotebookLM)
+**/*.svg
+**/*.mmd
+**/*.dot
+**/*.drawio
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif
+**/*.webp
+**/*.ico
+**/*.bmp
+**/*.tiff
+**/*.tif
+
+# Non-essential Documentation
+LICENSE
+.github/ISSUE_TEMPLATE/*
+**/*.md

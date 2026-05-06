@@ -42,7 +42,6 @@ build/
 .settings/
 .vscode/
 .cursor/
-.cowork/
 
 # Frontend / node
 node_modules/
@@ -68,6 +67,10 @@ crash.log
 !.env.example
 *.pem
 *.key
+.github/env.local
+.github/vars.local
+.github/secrets.local
+.github/secrets.local.aws
 
 # OS
 .DS_Store

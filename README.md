@@ -1,6 +1,6 @@
-# Java Signup Platform on AWS
+# Dockerized Java App on EC2
 
-Production-shaped reference deployment of a small Spring Boot signup app on
+Production-shaped reference deployment of a Dockerized Spring Boot app on
 EC2 ASG behind a public ALB, fronted by Nginx, persisted in RDS MySQL, with
 secrets in Secrets Manager, releases tracked in SSM Parameter Store, and
 operator-triggered CI/CD via GitHub Actions OIDC.
@@ -9,7 +9,7 @@ Public endpoint: `https://java.talorlik.com` (HTTP/80 is redirected to HTTPS/443
 
 ## Topology
 
-```
+```text
 Internet
   |
   | HTTPS :443  (HTTP :80 -> 301 -> HTTPS :443)
@@ -31,11 +31,11 @@ ASG of EC2 (private subnets, Ubuntu LTS)
   | TCP 3306
   v
 RDS MySQL (private DB subnets, Multi-AZ, encrypted)
-```
+```text
 
 ## Repository layout
 
-```
+```text
 .
 ├── infra/
 │   ├── bootstrap/         # one-time S3+KMS for remote state
@@ -47,7 +47,7 @@ RDS MySQL (private DB subnets, Multi-AZ, encrypted)
 ├── tests/e2e/             # Playwright suite
 ├── .github/workflows/     # ci.yml, infra-plan.yml, infra-apply.yml,
 │                          # infra-destroy.yml, app-deploy.yml, app-destroy.yml
-└── docs/                  # 00..05 setup + operations + security docs + ADRs
+└── docs/                  # auxiliary/operations_guide + ADRs + planning docs
 ```
 
 ## Decisions
@@ -65,7 +65,8 @@ Locked decisions in this delivery:
   24.04 LTS) (unverified - check Canonical's SSM listing).
 - Region: `us-east-1`.
 
-ADRs in `docs/adr/`. Detailed setup, ops, and security in `docs/00..05`.
+ADRs in `docs/auxiliary/adr/`. Detailed setup, ops, and security in
+`docs/auxiliary/operations_guide`.
 
 ---
 
@@ -73,7 +74,8 @@ ADRs in `docs/adr/`. Detailed setup, ops, and security in `docs/00..05`.
 
 Time budget on a clean account: roughly 30-45 minutes of wall clock,
 most of which is RDS Multi-AZ provisioning and the first ASG instance
-refresh. Tooling versions are listed in `docs/00-prerequisites.md`.
+refresh. Tooling versions are listed in
+`docs/auxiliary/operations_guide/00-prerequisites.md`.
 
 ### 0. One-time prerequisites (manual, outside this repo)
 
@@ -91,7 +93,8 @@ refresh. Tooling versions are listed in `docs/00-prerequisites.md`.
    - permissions limited to `route53:ChangeResourceRecordSets`,
      `GetChange`, `ListResourceRecordSets` on the
      `talorlik.com` hosted zone, plus `ListHostedZones`/`GetHostedZone`.
-   Full JSON examples in `docs/02-domain-account-dns.md`.
+   Full JSON examples in
+   `docs/auxiliary/operations_guide/02-domain-account-dns.md`.
 4. In DEPLOYMENT account (`us-east-1`), issue an ACM certificate for
    `java.talorlik.com`. Validate via DNS records placed in the DOMAIN
    account zone. Copy the certificate ARN.
@@ -325,7 +328,7 @@ building and pushing images.
 - Roll a release manually: `gh workflow run app-deploy.yml`.
 - Restart on a single node:
 
-  ```
+  ```bash
   aws ssm start-session --target <i-...>
   sudo -i
   cd /opt/java-app
@@ -335,8 +338,9 @@ building and pushing images.
   The `--env-file` is mandatory; the prod compose file interpolates
   `BACKEND_IMAGE` / `FRONTEND_IMAGE` from `/opt/java-app/.env`.
 
-Full operations notes in `docs/04-operations.md`. Security model in
-`docs/05-security-model.md`.
+Full operations notes in
+`docs/auxiliary/operations_guide/04-operations.md`. Security model in
+`docs/auxiliary/operations_guide/05-security-model.md`.
 
 ## License
 

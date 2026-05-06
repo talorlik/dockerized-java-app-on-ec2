@@ -63,12 +63,14 @@ stack in their AWS account with minimal hidden assumptions.
 java-signup-platform/
 ├── README.md
 ├── docs/
-│   ├── 00-prerequisites.md
-│   ├── 01-bootstrap-state.md
-│   ├── 02-domain-account-dns.md
-│   ├── 03-deployment.md
-│   ├── 04-operations.md
-│   └── 05-security-model.md
+│   ├── auxiliary/
+│   │   └── operations_guide/
+│   │       ├── 00-prerequisites.md
+│   │       ├── 01-bootstrap-state.md
+│   │       ├── 02-domain-account-dns.md
+│   │       ├── 03-deployment.md
+│   │       ├── 04-operations.md
+│   │       └── 05-security-model.md
 ├── infra/
 │   ├── bootstrap/
 │   │   ├── main.tf
@@ -889,15 +891,15 @@ Logs:
 
 ## Required docs
 
-| Doc                        | Contents                                                          |
-| -------------------------- | ----------------------------------------------------------------- |
-| `00-prerequisites.md`      | AWS account, GitHub repo, AWS CLI, Terraform, Docker, Java, Maven |
-| `01-bootstrap-state.md`    | Create remote state bucket and backend                            |
-| `02-domain-account-dns.md` | Hosted zone, cross-account Route53 role, A alias, SES DKIM        |
-| `03-deployment.md`         | Full deploy sequence                                              |
-| `04-operations.md`         | Logs, alarms, SSM access, restart app, refresh ASG                |
-| `05-security-model.md`     | IAM, SGs, secrets, TLS, DB access                                 |
-| `README.md`                | One-pass setup guide                                              |
+| Doc | Contents |
+| --- | --- |
+| `docs/auxiliary/operations_guide/00-prerequisites.md` | AWS account, GitHub repo, AWS CLI, Terraform, Docker, Java, Maven |
+| `docs/auxiliary/operations_guide/01-bootstrap-state.md` | Create remote state bucket and backend |
+| `docs/auxiliary/operations_guide/02-domain-account-dns.md` | Hosted zone, cross-account Route53 role, A alias, SES DKIM |
+| `docs/auxiliary/operations_guide/03-deployment.md` | Full deploy sequence |
+| `docs/auxiliary/operations_guide/04-operations.md` | Logs, alarms, SSM access, restart app, refresh ASG |
+| `docs/auxiliary/operations_guide/05-security-model.md` | IAM, SGs, secrets, TLS, DB access |
+| `README.md` | One-pass setup guide |
 
 ## Setup sequence for another AWS account
 
