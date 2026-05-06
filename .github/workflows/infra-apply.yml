@@ -115,6 +115,9 @@ jobs:
       - name: Upload compose file to S3 (compose-object pointer)
         env:
           AWS_REGION: ${{ vars.AWS_REGION }}
+          # AWS CLI v2 pipes JSON through `less` by default. Act's medium
+          # image has no `less`, causing exit 253. Empty value disables pager.
+          AWS_PAGER: ""
         run: |
           BUCKET="java-app-prod-config-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
           # Best-effort - bucket may already exist from a prior run.
