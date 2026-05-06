@@ -5,16 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dockerized Java App on EC2 - Documentation</title>
   <meta name="description" content="Project documentation for deploying Dockerized Java applications on AWS EC2, including architecture, deployment, operations, security, and ADRs.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta name="author" content="Tal Orlik">
+  <link rel="canonical" href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/index.html">
   <meta property="og:type" content="website">
+  <meta property="og:url" content="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/index.html">
   <meta property="og:title" content="Dockerized Java App on EC2 - Documentation">
   <meta property="og:description" content="Production-shaped Dockerized Java deployment reference with Terraform IaC and GitHub Actions CI/CD.">
   <meta property="og:image" content="https://github.com/talorlik/dockerized-java-app-on-ec2/raw/main/docs/header_banner.png">
+  <meta property="og:site_name" content="Dockerized Java App on EC2">
+  <meta property="og:locale" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Dockerized Java App on EC2 - Documentation">
   <meta name="twitter:description" content="Architecture, deployment, operations, and security documentation for the project.">
   <meta name="twitter:image" content="https://github.com/talorlik/dockerized-java-app-on-ec2/raw/main/docs/header_banner.png">
+  <meta name="theme-color" content="#0366d6">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link id="theme-stylesheet" rel="stylesheet" href="light-theme.css">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "TechArticle",
+      "headline": "Dockerized Java App on EC2 - Documentation",
+      "description": "Project documentation for deploying Dockerized Java applications on AWS EC2, including architecture, deployment, operations, security, and ADRs.",
+      "url": "https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/index.html",
+      "image": "https://github.com/talorlik/dockerized-java-app-on-ec2/raw/main/docs/header_banner.png",
+      "inLanguage": "en",
+      "author": {
+        "@type": "Person",
+        "name": "Tal Orlik"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Dockerized Java App on EC2"
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/index.html"
+      }
+    }
+  </script>
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -65,6 +95,16 @@
             <li>Terraform-managed AWS foundation across deployment and domain accounts</li>
             <li>GitHub Actions OIDC delivery with ASG Instance Refresh rollout</li>
           </ul>
+          <p class="ask-docs-inline">
+            <a href="https://notebooklm.google.com/notebook/df2387ab-6685-4322-bb3d-7add2e7bf341/preview" target="_blank" rel="noopener noreferrer" class="ask-docs-link">
+              <span class="ask-docs-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </span>
+              Ask the docs
+            </a>
+          </p>
         </article>
         <article class="card">
           <h3>Target Runtime Topology</h3>
@@ -160,6 +200,9 @@ gh run watch</code></pre>
           Secrets Manager.
         </p>
       </div>
+      <figure class="architecture-diagram-wrapper" aria-label="Project architecture diagram">
+        <img src="auxiliary/architecture-diagrams/diagrams/java_app_architecture.png" alt="Project architecture diagram" class="architecture-diagram">
+      </figure>
       <div class="card">
         <h3>Key Paths</h3>
         <ul>
@@ -174,44 +217,139 @@ gh run watch</code></pre>
 
     <section id="documentation">
       <h2>Documentation</h2>
+      <h3>Core Documentation</h3>
       <div class="doc-grid">
-        <article class="card">
-          <h3>Operator Guides</h3>
-          <ul>
-            <li><a href="auxiliary/operations_guide/00-prerequisites.md">00 - Prerequisites</a></li>
-            <li><a href="auxiliary/operations_guide/01-bootstrap-state.md">01 - Bootstrap State</a></li>
-            <li><a href="auxiliary/operations_guide/02-domain-account-dns.md">02 - Domain Account DNS</a></li>
-            <li><a href="auxiliary/operations_guide/03-deployment.md">03 - Deployment</a></li>
-            <li><a href="auxiliary/operations_guide/04-operations.md">04 - Operations</a></li>
-            <li><a href="auxiliary/operations_guide/05-security-model.md">05 - Security Model</a></li>
-          </ul>
-        </article>
-        <article class="card">
-          <h3>Planning Documents</h3>
-          <ul>
-            <li><a href="auxiliary/planning/PROJECT_OVERVIEW.md">Project Overview</a></li>
-            <li><a href="auxiliary/planning/PRODUCT_REQUIREMENTS_DOCUMENT.md">Product Requirements</a></li>
-            <li><a href="auxiliary/planning/TECHNICAL_REQUIREMENTS_REFERENCE.md">Technical Requirements</a></li>
-            <li><a href="auxiliary/planning/ENGINEERING_EXECUTION_BACKLOG.md">Engineering Backlog</a></li>
-            <li><a href="auxiliary/planning/INITIAL_HL_DESCRIPTION.md">Initial High-Level Description</a></li>
-          </ul>
-        </article>
-        <article class="card">
-          <h3>Architecture Decision Records</h3>
-          <ul>
-            <li><a href="auxiliary/adr/0001-frontend-stack.md">ADR 0001 - Frontend Stack</a></li>
-            <li><a href="auxiliary/adr/0002-auth-model.md">ADR 0002 - Auth Model</a></li>
-            <li><a href="auxiliary/adr/0003-waf.md">ADR 0003 - WAF</a></li>
-            <li><a href="auxiliary/adr/0004-ubuntu-resolution.md">ADR 0004 - Ubuntu Resolution</a></li>
-            <li><a href="auxiliary/adr/0005-secret-rotation.md">ADR 0005 - Secret Rotation</a></li>
-            <li><a href="auxiliary/adr/0006-provider-account-model.md">ADR 0006 - Provider Account Model</a></li>
-          </ul>
-        </article>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/planning/PROJECT_OVERVIEW.md" target="_blank" rel="noopener noreferrer">Project Overview</a>
+          <p>Canonical architecture and implementation blueprint.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/planning/PRODUCT_REQUIREMENTS_DOCUMENT.md" target="_blank" rel="noopener noreferrer">Product Requirements</a>
+          <p>Product scope and feature requirements.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/planning/TECHNICAL_REQUIREMENTS_REFERENCE.md" target="_blank" rel="noopener noreferrer">Technical Requirements</a>
+          <p>Detailed technical constraints and expected behavior.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/architecture/ARCHITECTURE.md" target="_blank" rel="noopener noreferrer">Architecture Guide</a>
+          <p>Architecture-focused implementation reference.</p>
+        </div>
+      </div>
+
+      <h3>Operations Guides</h3>
+      <div class="doc-grid">
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/operations_guide/00-prerequisites.md" target="_blank" rel="noopener noreferrer">00 - Prerequisites</a>
+          <p>Account, IAM, and environment prerequisites.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/operations_guide/01-bootstrap-state.md" target="_blank" rel="noopener noreferrer">01 - Bootstrap State</a>
+          <p>Terraform remote state bootstrap process.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/operations_guide/02-domain-account-dns.md" target="_blank" rel="noopener noreferrer">02 - Domain Account DNS</a>
+          <p>Cross-account Route53 and DNS setup.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/operations_guide/03-deployment.md" target="_blank" rel="noopener noreferrer">03 - Deployment</a>
+          <p>Production deployment steps and sequencing.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/operations_guide/04-operations.md" target="_blank" rel="noopener noreferrer">04 - Operations</a>
+          <p>Runbook for day-2 operations and lifecycle tasks.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/operations_guide/05-security-model.md" target="_blank" rel="noopener noreferrer">05 - Security Model</a>
+          <p>Security baseline and hardening model.</p>
+        </div>
+      </div>
+
+      <h3>Planning and Decisions</h3>
+      <div class="doc-grid">
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/planning/ENGINEERING_EXECUTION_BACKLOG.md" target="_blank" rel="noopener noreferrer">Engineering Execution Backlog</a>
+          <p>Execution plan and work breakdown.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/planning/INITIAL_HL_DESCRIPTION.md" target="_blank" rel="noopener noreferrer">Initial High-Level Description</a>
+          <p>Initial project framing and goals.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/adr/0001-frontend-stack.md" target="_blank" rel="noopener noreferrer">ADR 0001 - Frontend Stack</a>
+          <p>Decision record for frontend technology.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/adr/0002-auth-model.md" target="_blank" rel="noopener noreferrer">ADR 0002 - Auth Model</a>
+          <p>Authentication and authorization decision.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/adr/0003-waf.md" target="_blank" rel="noopener noreferrer">ADR 0003 - WAF</a>
+          <p>Web application firewall decision record.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/adr/0004-ubuntu-resolution.md" target="_blank" rel="noopener noreferrer">ADR 0004 - Ubuntu Resolution</a>
+          <p>Base OS selection and resolution details.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/adr/0005-secret-rotation.md" target="_blank" rel="noopener noreferrer">ADR 0005 - Secret Rotation</a>
+          <p>Secret rotation model and operational stance.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/adr/0006-provider-account-model.md" target="_blank" rel="noopener noreferrer">ADR 0006 - Provider Account Model</a>
+          <p>AWS provider and account topology decision.</p>
+        </div>
+      </div>
+
+      <h3>NotebookLM and Diagram Docs</h3>
+      <div class="doc-grid">
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/NotebookLM/WELCOME_NOTE.md" target="_blank" rel="noopener noreferrer">NotebookLM Welcome Note</a>
+          <p>NotebookLM onboarding and context guidance.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/NotebookLM/SLIDE_DECK_DETAILED_INSTRUCTIONS.md" target="_blank" rel="noopener noreferrer">Slide Deck Detailed Instructions</a>
+          <p>Detailed prompts for presentation generation.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/NotebookLM/SLIDE_DECK_PRESENTER_INSTRUCTIONS.md" target="_blank" rel="noopener noreferrer">Slide Deck Presenter Instructions</a>
+          <p>Presenter notes and delivery prompts.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/NotebookLM/QUIZ_GENERATION_INSTRUCTIONS.md" target="_blank" rel="noopener noreferrer">Quiz Generation Instructions</a>
+          <p>Prompting guide for quiz generation workflows.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/NotebookLM/FLASHCARD_GENERATION_INSTRUCTIONS.md" target="_blank" rel="noopener noreferrer">Flashcard Generation Instructions</a>
+          <p>Prompting guide for flashcard generation.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/architecture-diagrams/SETUP.md" target="_blank" rel="noopener noreferrer">Architecture Diagram Setup</a>
+          <p>How to generate and maintain architecture diagrams.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/architecture-diagrams/INSTRUCTIONS.md" target="_blank" rel="noopener noreferrer">Architecture Diagram Instructions</a>
+          <p>Diagram authoring and export instructions.</p>
+        </div>
+        <div class="doc-item">
+          <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/architecture-diagrams/AGENT.md" target="_blank" rel="noopener noreferrer">Architecture Diagram Agent Notes</a>
+          <p>Agent-specific notes for diagram workflows.</p>
+        </div>
       </div>
     </section>
 
     <section id="operations">
       <h2>Operations</h2>
+      <div class="card ask-docs-card">
+        <a href="https://notebooklm.google.com/notebook/df2387ab-6685-4322-bb3d-7add2e7bf341/preview" target="_blank" rel="noopener noreferrer" class="ask-docs-link">
+          <span class="ask-docs-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </span>
+          Ask about this project
+        </a>
+      </div>
       <div class="doc-grid">
         <article class="card">
           <h3>Release Workflow</h3>
