@@ -84,9 +84,9 @@ module "rds" {
   backup_retention_period          = 14
   backup_window                    = "03:00-04:00"
   maintenance_window               = "Sun:04:30-Sun:05:30"
-  deletion_protection              = true
+  deletion_protection              = var.rds_deletion_protection
   delete_automated_backups         = false
-  skip_final_snapshot              = false
+  skip_final_snapshot              = var.rds_skip_final_snapshot
   final_snapshot_identifier_prefix = "${local.name_prefix}-mysql-final"
 
   performance_insights_enabled          = true

@@ -209,3 +209,28 @@ variable "enable_waf" {
   type    = bool
   default = true
 }
+
+# ----------------------------------------------------------------------------
+# Destroy-time overrides
+#
+# Kept safe by default. The infra-destroy workflow flips these via TF_VAR_* so
+# that a single `terraform destroy` can tear the env down without manual
+# pre-steps. Do not flip them in normal apply runs.
+# ----------------------------------------------------------------------------
+variable "rds_deletion_protection" {
+  description = "Whether RDS deletion protection is enabled. Override to false at destroy time."
+  type        = bool
+  default     = true
+}
+
+variable "rds_skip_final_snapshot" {
+  description = "Skip the RDS final snapshot at destroy time. Override to true at destroy time."
+  type        = bool
+  default     = false
+}
+
+variable "alb_logs_force_destroy" {
+  description = "Force-destroy the ALB log bucket even if non-empty. Override to true at destroy time."
+  type        = bool
+  default     = false
+}

@@ -28,7 +28,7 @@ locals {
 
 resource "aws_s3_bucket" "alb_logs" {
   bucket        = "${local.name_prefix}-alb-logs-${var.deployment_account_id}"
-  force_destroy = false
+  force_destroy = var.alb_logs_force_destroy
   tags          = local.common_tags
 }
 

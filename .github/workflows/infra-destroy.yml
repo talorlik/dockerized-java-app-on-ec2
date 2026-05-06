@@ -113,51 +113,67 @@ jobs:
           done
 
       # -------------------------------------------------------------------
-      # 3. Empty buckets that have versioning or that TF refuses to remove.
+      # 3. Stop ALB from writing new logs, then disable deletion protection,
+      #    then empty buckets that TF refuses to remove (versioned).
       # -------------------------------------------------------------------
-      - name: Empty ALB log bucket
+      - name: Disable ALB access logs and deletion protection
         run: |
-          B="java-app-prod-alb-logs-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
-          # delete current + noncurrent versions + delete markers
-          aws s3api list-object-versions --bucket "$B" --output json 2>/dev/null \
-            | jq -r '[.Versions[]?, .DeleteMarkers[]?] | map({Key:.Key, VersionId:.VersionId}) | _nwise(900)' \
-            | while read -r CHUNK; do
-                if [ -n "$CHUNK" ] && [ "$CHUNK" != "null" ]; then
-                  aws s3api delete-objects --bucket "$B" \
-                    --delete "{\"Objects\": $CHUNK, \"Quiet\": true}" || true
-                fi
-              done
-
-      - name: Empty config (compose) bucket
-        run: |
-          B="java-app-prod-config-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
-          aws s3api list-object-versions --bucket "$B" --output json 2>/dev/null \
-            | jq -r '[.Versions[]?, .DeleteMarkers[]?] | map({Key:.Key, VersionId:.VersionId}) | _nwise(900)' \
-            | while read -r CHUNK; do
-                if [ -n "$CHUNK" ] && [ "$CHUNK" != "null" ]; then
-                  aws s3api delete-objects --bucket "$B" \
-                    --delete "{\"Objects\": $CHUNK, \"Quiet\": true}" || true
-                fi
-              done
-
-      # -------------------------------------------------------------------
-      # 4. Disable ALB deletion protection so terraform destroy can proceed.
-      # -------------------------------------------------------------------
-      - name: Disable ALB deletion protection
-        run: |
+          set -euo pipefail
           ARN=$(aws elbv2 describe-load-balancers \
             --query "LoadBalancers[?starts_with(LoadBalancerName, 'java-app-prod-alb')].LoadBalancerArn | [0]" \
             --output text)
           if [ -n "$ARN" ] && [ "$ARN" != "None" ]; then
             aws elbv2 modify-load-balancer-attributes \
               --load-balancer-arn "$ARN" \
-              --attributes Key=deletion_protection.enabled,Value=false
+              --attributes Key=access_logs.s3.enabled,Value=false \
+                           Key=deletion_protection.enabled,Value=false
           else
             echo "no ALB found - it may already be gone"
           fi
 
+      - name: Empty ALB log bucket
+        run: |
+          set -euo pipefail
+          B="java-app-prod-alb-logs-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
+          if ! aws s3api head-bucket --bucket "$B" 2>/dev/null; then
+            echo "bucket $B not present, skipping"
+            exit 0
+          fi
+          # Paginate, build full delete payload in one jq call, stop when empty.
+          while :; do
+            PAYLOAD=$(aws s3api list-object-versions \
+                        --bucket "$B" --max-items 900 --output json 2>/dev/null \
+                      | jq -c '{Objects: [((.Versions // [])[]),
+                                          ((.DeleteMarkers // [])[])
+                                          | {Key, VersionId}],
+                               Quiet: true}')
+            COUNT=$(printf '%s' "$PAYLOAD" | jq '.Objects | length')
+            [ "$COUNT" -eq 0 ] && break
+            aws s3api delete-objects --bucket "$B" --delete "$PAYLOAD"
+          done
+
+      - name: Empty config (compose) bucket
+        run: |
+          set -euo pipefail
+          B="java-app-prod-config-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
+          if ! aws s3api head-bucket --bucket "$B" 2>/dev/null; then
+            echo "bucket $B not present, skipping"
+            exit 0
+          fi
+          while :; do
+            PAYLOAD=$(aws s3api list-object-versions \
+                        --bucket "$B" --max-items 900 --output json 2>/dev/null \
+                      | jq -c '{Objects: [((.Versions // [])[]),
+                                          ((.DeleteMarkers // [])[])
+                                          | {Key, VersionId}],
+                               Quiet: true}')
+            COUNT=$(printf '%s' "$PAYLOAD" | jq '.Objects | length')
+            [ "$COUNT" -eq 0 ] && break
+            aws s3api delete-objects --bucket "$B" --delete "$PAYLOAD"
+          done
+
       # -------------------------------------------------------------------
-      # 5. Terraform destroy.
+      # 5. Terraform init, then state surgery + RDS prep, then destroy.
       # -------------------------------------------------------------------
       - name: terraform init
         working-directory: infra/envs/prod
@@ -165,6 +181,42 @@ jobs:
           terraform init \
             -backend-config="bucket=java-app-tfstate-${{ vars.DEPLOYMENT_ACCOUNT_ID }}-${{ vars.AWS_REGION }}" \
             -backend-config="region=${{ vars.AWS_REGION }}"
+
+      # Detach service-linked roles from state. They are account-wide and
+      # AWS recreates them automatically on next ALB / ASG creation; deleting
+      # them here is unsafe and racy with ALB destroy.
+      - name: Detach service-linked roles from state
+        working-directory: infra/envs/prod
+        run: |
+          set -euo pipefail
+          for ADDR in \
+              aws_iam_service_linked_role.elb \
+              aws_iam_service_linked_role.autoscaling; do
+            if terraform state list | grep -qx "$ADDR"; then
+              terraform state rm "$ADDR"
+            else
+              echo "$ADDR not in state, skipping"
+            fi
+          done
+
+      # Disable RDS deletion protection imperatively and wait for the
+      # instance to reach `available` so any in-flight modify completes
+      # before TF calls DeleteDBInstance.
+      - name: Prepare RDS for destroy
+        run: |
+          set -euo pipefail
+          DBI="java-app-prod-mysql"
+          if aws rds describe-db-instances --db-instance-identifier "$DBI" >/dev/null 2>&1; then
+            aws rds modify-db-instance \
+              --db-instance-identifier "$DBI" \
+              --no-deletion-protection \
+              --apply-immediately >/dev/null
+            # Wait up to ~30 min for available; ignore terminal failures.
+            aws rds wait db-instance-available \
+              --db-instance-identifier "$DBI" || true
+          else
+            echo "RDS instance $DBI not present, skipping"
+          fi
 
       - name: terraform destroy
         working-directory: infra/envs/prod
@@ -175,5 +227,8 @@ jobs:
           TF_VAR_domain_account_route53_role_arn: ${{ secrets.DOMAIN_ROUTE53_ROLE_ARN }}
           TF_VAR_hosted_zone_id: ${{ vars.HOSTED_ZONE_ID }}
           TF_VAR_acm_certificate_arn: ${{ secrets.ACM_CERTIFICATE_ARN }}
+          TF_VAR_rds_deletion_protection: "false"
+          TF_VAR_rds_skip_final_snapshot: "true"
+          TF_VAR_alb_logs_force_destroy: "true"
         run: |
           terraform destroy -input=false -auto-approve
