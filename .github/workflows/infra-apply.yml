@@ -28,6 +28,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Ensures `aws` is on PATH. GitHub-hosted ubuntu-latest already ships
+      # AWS CLI v2; nektos/act's default medium image does not. Idempotent:
+      # if `aws` is already present we just print the version and exit.
+      - name: Ensure AWS CLI present
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v aws >/dev/null 2>&1; then
+            aws --version
+            exit 0
+          fi
+          tmp=$(mktemp -d)
+          curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "$tmp/awscliv2.zip"
+          unzip -q "$tmp/awscliv2.zip" -d "$tmp"
+          sudo "$tmp/aws/install" --update
+          aws --version
+
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.DEPLOYMENT_ROLE_ARN }}
@@ -56,7 +73,17 @@ jobs:
         run: |
           set -euo pipefail
           for SVC in autoscaling.amazonaws.com elasticloadbalancing.amazonaws.com; do
-            aws iam create-service-linked-role --aws-service-name "$SVC" 2>/dev/null || true
+            if out=$(aws iam create-service-linked-role --aws-service-name "$SVC" 2>&1); then
+              echo "Created SLR for $SVC"
+            else
+              # Tolerate "already exists" only; surface anything else.
+              if echo "$out" | grep -qiE 'has been taken in this account|already exists'; then
+                echo "SLR for $SVC already exists; skipping."
+              else
+                echo "$out" >&2
+                exit 1
+              fi
+            fi
           done
 
       - name: init
