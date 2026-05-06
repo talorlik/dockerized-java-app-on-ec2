@@ -17,7 +17,7 @@
     <version>1.0.0</version>
     <packaging>jar</packaging>
     <name>java-app-backend</name>
-    <description>Java Signup Platform - Backend</description>
+    <description>Dockerized Java App on EC2 - Backend</description>
 
     <properties>
         <java.version>21</java.version>

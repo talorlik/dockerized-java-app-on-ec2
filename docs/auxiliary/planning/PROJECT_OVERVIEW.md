@@ -60,7 +60,7 @@ stack in their AWS account with minimal hidden assumptions.
 ### Technical structure
 
 ```text
-java-signup-platform/
+dockerized-java-app-on-ec2/
 ├── README.md
 ├── docs/
 │   ├── auxiliary/

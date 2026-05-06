@@ -7,7 +7,8 @@ agent-facing summary plus repo-specific rules.
 
 ## 1. Project identity
 
-Java signup platform deployed to AWS EC2 behind an ALB.
+Reference implementation for deploying a Dockerized Java app to AWS EC2 behind
+an ALB.
 
 - Backend: Spring Boot 3.5.0 (Java 21, Maven), JPA + Flyway against RDS MySQL,
   JWT auth (`jjwt` 0.12.6), Bucket4j rate limiting (8.10.1), AWS SDK v2

@@ -26,8 +26,26 @@ jobs:
     needs: build-test
     runs-on: ubuntu-latest
     environment: prod
+    env:
+      AWS_PAGER: ""
     steps:
       - uses: actions/checkout@v4
+
+      # Ensures `aws` is on PATH. GitHub-hosted ubuntu-latest already ships
+      # AWS CLI v2; nektos/act's default medium image does not. Idempotent.
+      - name: Ensure AWS CLI present
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v aws >/dev/null 2>&1; then
+            aws --version
+            exit 0
+          fi
+          tmp=$(mktemp -d)
+          curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "$tmp/awscliv2.zip"
+          unzip -q "$tmp/awscliv2.zip" -d "$tmp"
+          sudo "$tmp/aws/install" --update
+          aws --version
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
