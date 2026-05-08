@@ -45,7 +45,13 @@ jobs:
           sudo "$tmp/aws/install" --update
           aws --version
 
+      # Real GitHub runners only: assume DEPLOYMENT_ROLE_ARN via OIDC.
+      # Skipped under `act` (env.ACT==true), where static AWS credentials are
+      # already provided to the container via --env-file (.github/env.local).
+      # Skipping prevents this action from clobbering the env-loaded creds and
+      # from failing when no real OIDC token issuer is present.
       - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
+        if: ${{ env.ACT != 'true' }}
         with:
           role-to-assume: ${{ secrets.DEPLOYMENT_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
