@@ -6,7 +6,7 @@ This document defines the production architecture for deploying a Dockerized
 Java application on AWS EC2.
 It consolidates the project planning documentation, technical requirements, and
 accepted ADR decisions into a single operational architecture view.
-The current Java signup application is the sample workload used to validate this
+The current Dockerized Java app is the sample workload used to validate this
 deployment pattern.
 
 ## 2. System Scope
