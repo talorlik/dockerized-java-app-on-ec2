@@ -15,7 +15,7 @@ spring:
     hibernate:
       ddl-auto: validate
     properties:
-      hibernate.dialect: org.hibernate.dialect.MySQL8Dialect
+      hibernate.dialect: org.hibernate.dialect.MySQLDialect
       hibernate.jdbc.batch_size: 25
     open-in-view: false
   flyway:

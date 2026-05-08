@@ -10,6 +10,11 @@ resource "aws_route53_record" "app_alias" {
   name     = var.app_subdomain
   type     = "A"
 
+  # If a previous infra-destroy partially failed and left the record in the
+  # DOMAIN account hosted zone, allow_overwrite lets the next apply replace
+  # it instead of erroring with "RR exists with different value".
+  allow_overwrite = true
+
   alias {
     name                   = module.alb.dns_name
     zone_id                = module.alb.zone_id

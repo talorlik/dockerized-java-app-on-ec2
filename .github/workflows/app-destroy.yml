@@ -119,8 +119,9 @@ jobs:
       # -------------------------------------------------------------------
       - name: Reset SSM release pointers to 'bootstrap'
         run: |
+          KMS_ALIAS="alias/java-app-prod-secrets"
           for p in /java-app/prod/backend-image-tag /java-app/prod/frontend-image-tag /java-app/prod/release-id; do
-            aws ssm put-parameter --name "$p" --type String --overwrite --value "bootstrap"
+            aws ssm put-parameter --name "$p" --type SecureString --key-id "$KMS_ALIAS" --overwrite --value "bootstrap"
           done
 
       # -------------------------------------------------------------------

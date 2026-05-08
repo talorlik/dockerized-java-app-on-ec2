@@ -140,9 +140,9 @@ variable "rds_max_allocated_storage_gb" {
 }
 
 variable "rds_engine_version" {
-  description = "RDS MySQL engine version. 8.0 lets RDS choose the latest 8.0.x."
+  description = "RDS MySQL engine version. 8.4 is the current LTS line; the bare major lets RDS pick the latest 8.4.x patch."
   type        = string
-  default     = "8.0"
+  default     = "8.4"
 }
 
 variable "db_name" {
@@ -198,8 +198,15 @@ variable "alarm_email" {
 }
 
 variable "log_retention_days" {
-  type    = number
-  default = 30
+  description = <<EOT
+CloudWatch Logs retention for application + VPC flow log groups.
+Dev-only environment: defaulted to 1 day (the service minimum; sub-day
+retention is not supported). Bump to 365+ for live use; the corresponding
+checkov skip on aws_cloudwatch_log_group.app must also be removed in
+that case.
+EOT
+  type        = number
+  default     = 1
 }
 
 # ----------------------------------------------------------------------------
@@ -211,32 +218,47 @@ variable "enable_waf" {
 }
 
 # ----------------------------------------------------------------------------
-# Destroy-time overrides
+# Destroy-friendly dev defaults
 #
-# Kept safe by default. The infra-destroy workflow flips these via TF_VAR_* so
-# that a single `terraform destroy` can tear the env down without manual
-# pre-steps. Do not flip them in normal apply runs.
+# This stack is a development reference impl. Defaults below are tuned so a
+# `infra-apply -> infra-destroy -> infra-apply` cycle never blocks on
+# protected resources, retained snapshots, or non-empty buckets/repos.
+#
+# BEFORE GOING LIVE, flip every default in this section:
+#   rds_deletion_protection      false -> true
+#   rds_skip_final_snapshot      true  -> false
+#   rds_delete_automated_backups true  -> false
+#   alb_logs_force_destroy       true  -> false
+#   alb_deletion_protection      false -> true
+# (and remove the dev-only retention skips on aws_cloudwatch_log_group.app
+#  / .waf, plus bump var.log_retention_days; see those resources.)
 # ----------------------------------------------------------------------------
 variable "rds_deletion_protection" {
-  description = "Whether RDS deletion protection is enabled. Override to false at destroy time."
+  description = "Whether RDS deletion protection is enabled. Dev default: false."
+  type        = bool
+  default     = false
+}
+
+variable "rds_skip_final_snapshot" {
+  description = "Skip the RDS final snapshot at destroy time. Dev default: true (no snapshot orphan to wedge re-apply)."
   type        = bool
   default     = true
 }
 
-variable "rds_skip_final_snapshot" {
-  description = "Skip the RDS final snapshot at destroy time. Override to true at destroy time."
-  type        = bool
-  default     = false
-}
-
 variable "alb_logs_force_destroy" {
-  description = "Force-destroy the ALB log bucket even if non-empty. Override to true at destroy time."
+  description = "Force-destroy the ALB log bucket even if non-empty. Dev default: true."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "rds_delete_automated_backups" {
-  description = "Delete retained automated backups when the instance is destroyed. Override to true at destroy time."
+  description = "Delete retained automated backups when the instance is destroyed. Dev default: true."
+  type        = bool
+  default     = true
+}
+
+variable "alb_deletion_protection" {
+  description = "Whether the ALB carries deletion protection. Dev default: false so a clean `terraform destroy` doesn't need an out-of-band flip."
   type        = bool
   default     = false
 }

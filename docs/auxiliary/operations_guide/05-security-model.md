@@ -39,6 +39,35 @@
 - App logs never include secret values; SES errors log only the exception
   class name and recipient.
 
+### Manual rotation - `db/app-user`
+
+Automatic rotation is intentionally out of scope (see ADR 0005, ADR 0007).
+To rotate the `appuser` password:
+
+1. Generate a new password:
+   ```bash
+   NEW=$(aws secretsmanager get-random-password \
+     --password-length 32 \
+     --exclude-characters '"@/\\' \
+     --query RandomPassword --output text)
+   ```
+2. Write the new value to Secrets Manager:
+   ```bash
+   aws secretsmanager put-secret-value \
+     --secret-id /java-app/prod/db/app-user \
+     --secret-string "$(jq -n --arg u appuser --arg p "$NEW" \
+        '{username:$u, password:$p}')"
+   ```
+3. Apply it on the live MySQL instance, authenticated as `dbadmin` with
+   the master secret:
+   ```sql
+   ALTER USER 'appuser'@'%' IDENTIFIED WITH caching_sha2_password BY '<NEW>';
+   FLUSH PRIVILEGES;
+   ```
+4. Trigger an ASG instance refresh so EC2s re-read the secret on boot.
+   Long-lived instances retain the previous credential in `/opt/java-app/.env`
+   until they recycle.
+
 ## Compute hardening
 
 - IMDSv2 required (`http_tokens=required`).

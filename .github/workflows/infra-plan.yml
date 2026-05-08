@@ -55,7 +55,11 @@ jobs:
           terraform plan -no-color -input=false -out=tfplan
           terraform show -no-color tfplan > plan.txt
 
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+      # Skip under `act`: GitHub artifact storage is not reachable locally
+      # (returns HTTP 401). plan.txt is still rendered into the job summary
+      # below so a local act run still surfaces the plan in stdout.
+      - if: ${{ !env.ACT }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: terraform-plan
           path: |

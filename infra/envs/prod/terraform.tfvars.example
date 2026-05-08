@@ -29,7 +29,7 @@ ubuntu_lts_codename              = "noble"
 rds_instance_class               = "db.t3.medium"
 rds_allocated_storage_gb         = 50
 rds_max_allocated_storage_gb     = 200
-rds_engine_version               = "8.0"
+rds_engine_version               = "8.4"
 db_name                          = "javaapp"
 db_app_username                  = "appuser"
 

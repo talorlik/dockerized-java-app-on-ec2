@@ -1,7 +1,9 @@
 # ADR 0005 - Secret rotation strategy
 
 ## Status
-Accepted (initial)
+Accepted (initial). The "Destroy/recreate lifecycle" subsection below is
+overridden in dev environments by ADR 0007; see that ADR for the
+`recovery_window_in_days = 0` rationale and the production-revert path.
 
 ## Context
 Secrets must be rotatable without service disruption.

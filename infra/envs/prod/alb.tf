@@ -27,9 +27,27 @@ locals {
 }
 
 resource "aws_s3_bucket" "alb_logs" {
+  # checkov:skip=CKV_AWS_144:single-region reference impl; CRR out of scope
+  # checkov:skip=CKV2_AWS_62:no consumer for S3 event notifications
   bucket        = "${local.name_prefix}-alb-logs-${var.deployment_account_id}"
   force_destroy = var.alb_logs_force_destroy
   tags          = local.common_tags
+}
+
+# Server-access logging for the ALB-logs bucket itself. Target is the
+# bootstrap access_logs bucket (deterministic name; managed by the bootstrap
+# state, not this stack). Without this, CKV_AWS_18 fails on the bucket.
+resource "aws_s3_bucket_logging" "alb_logs" {
+  bucket        = aws_s3_bucket.alb_logs.id
+  target_bucket = "java-app-tfstate-${var.deployment_account_id}-${var.aws_region}-access-logs"
+  target_prefix = "alb-logs-access/"
+}
+
+resource "aws_s3_bucket_versioning" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+  versioning_configuration {
+    status = "Enabled"
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "alb_logs" {
@@ -48,6 +66,7 @@ resource "aws_s3_bucket_ownership_controls" "alb_logs" {
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "alb_logs" {
+  # checkov:skip=CKV_AWS_145:ALB log delivery does not support SSE-KMS CMK on the legacy account-id grant path; AES256 is the supported choice for ALB log targets in regions like us-east-1.
   bucket = aws_s3_bucket.alb_logs.id
   rule {
     # ALB log delivery requires SSE-S3 (AES256), not SSE-KMS, for older
@@ -142,6 +161,7 @@ resource "aws_s3_bucket_policy" "alb_logs" {
 # ALB
 # ----------------------------------------------------------------------------
 module "alb" {
+  # checkov:skip=CKV_TF_1:source pinned via registry tag (~> 9.10). Commit-hash pinning rejected for upstream-maintained modules; CKV_TF_2 (tag pin) covers the supply-chain intent.
   source  = "terraform-aws-modules/alb/aws"
   version = "~> 9.10"
 
@@ -152,7 +172,9 @@ module "alb" {
   subnets         = module.vpc.public_subnets
   security_groups = [aws_security_group.alb.id]
 
-  enable_deletion_protection = true
+  # Variable-controlled so dev cycles don't need an out-of-band CLI flip
+  # before destroy. See var.alb_deletion_protection for live-mode guidance.
+  enable_deletion_protection = var.alb_deletion_protection
   drop_invalid_header_fields = true
   idle_timeout               = 60
 

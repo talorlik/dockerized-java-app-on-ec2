@@ -66,7 +66,10 @@ jobs:
           fi
 
       - name: Upload surefire reports
-        if: always()
+        # `act` cannot reach GitHub's artifact storage backend (HTTP 401 against
+        # /_apis/pipelines/...). Skip the upload locally; keep `always()` semantics
+        # on real CI so reports are captured even when tests fail.
+        if: ${{ !env.ACT && always() }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: backend-test-reports
@@ -137,7 +140,8 @@ jobs:
         run: docker compose -f docker-compose.local.yml down -v
 
       - name: Upload Playwright report
-        if: always()
+        # Same reason as the surefire upload above: skip under `act`.
+        if: ${{ !env.ACT && always() }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: playwright-report

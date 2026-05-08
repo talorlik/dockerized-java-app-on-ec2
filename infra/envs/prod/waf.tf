@@ -118,3 +118,26 @@ resource "aws_wafv2_web_acl_association" "alb" {
   resource_arn = module.alb.arn
   web_acl_arn  = aws_wafv2_web_acl.alb[0].arn
 }
+
+# ----------------------------------------------------------------------------
+# WAF logging configuration
+#
+# CKV2_AWS_31 requires every wafv2 ACL to have a logging configuration. We
+# ship logs to a CloudWatch log group whose name MUST start with
+# "aws-waf-logs-" (AWS WAF logging-destination naming requirement). The log
+# group is encrypted with the same app CMK used for other log groups.
+# ----------------------------------------------------------------------------
+resource "aws_cloudwatch_log_group" "waf" {
+  count = var.enable_waf ? 1 : 0
+  # checkov:skip=CKV_AWS_338:dev-only environment, intentional short retention. Bump var.log_retention_days for live use.
+  name              = "aws-waf-logs-${local.name_prefix}"
+  retention_in_days = var.log_retention_days
+  kms_key_id        = aws_kms_key.app_secrets.arn
+  tags              = local.common_tags
+}
+
+resource "aws_wafv2_web_acl_logging_configuration" "alb" {
+  count                   = var.enable_waf ? 1 : 0
+  resource_arn            = aws_wafv2_web_acl.alb[0].arn
+  log_destination_configs = [aws_cloudwatch_log_group.waf[0].arn]
+}

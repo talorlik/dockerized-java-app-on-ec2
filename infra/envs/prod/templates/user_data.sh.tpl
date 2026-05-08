@@ -108,12 +108,15 @@ mkdir -p /opt/java-app
 cd /opt/java-app
 
 # ---- Pull release metadata + DB endpoint from SSM ----
-BACKEND_TAG=$(aws ssm get-parameter --region "$REGION" --name "${ssm_backend_tag}"  --query 'Parameter.Value' --output text)
-FRONTEND_TAG=$(aws ssm get-parameter --region "$REGION" --name "${ssm_frontend_tag}" --query 'Parameter.Value' --output text)
-RELEASE_ID=$(aws ssm get-parameter --region "$REGION" --name "${ssm_release_id}"   --query 'Parameter.Value' --output text)
-DB_HOST=$(aws ssm get-parameter --region "$REGION" --name "${ssm_db_endpoint}"     --query 'Parameter.Value' --output text)
-DB_NAME=$(aws ssm get-parameter --region "$REGION" --name "${ssm_db_name}"         --query 'Parameter.Value' --output text)
-COMPOSE_OBJ=$(aws ssm get-parameter --region "$REGION" --name "${ssm_compose_object}" --query 'Parameter.Value' --output text)
+# All these parameters are SecureString under the app-secrets CMK (see
+# infra/envs/prod/secrets.tf). --with-decryption is required; the EC2 instance
+# role grants kms:Decrypt on aws_kms_key.app_secrets via the app_inline policy.
+BACKEND_TAG=$(aws ssm get-parameter --with-decryption --region "$REGION" --name "${ssm_backend_tag}"  --query 'Parameter.Value' --output text)
+FRONTEND_TAG=$(aws ssm get-parameter --with-decryption --region "$REGION" --name "${ssm_frontend_tag}" --query 'Parameter.Value' --output text)
+RELEASE_ID=$(aws ssm get-parameter --with-decryption --region "$REGION" --name "${ssm_release_id}"   --query 'Parameter.Value' --output text)
+DB_HOST=$(aws ssm get-parameter --with-decryption --region "$REGION" --name "${ssm_db_endpoint}"     --query 'Parameter.Value' --output text)
+DB_NAME=$(aws ssm get-parameter --with-decryption --region "$REGION" --name "${ssm_db_name}"         --query 'Parameter.Value' --output text)
+COMPOSE_OBJ=$(aws ssm get-parameter --with-decryption --region "$REGION" --name "${ssm_compose_object}" --query 'Parameter.Value' --output text)
 
 # ---- Pull DB app-user creds from Secrets Manager ----
 DB_USER_JSON=$(aws secretsmanager get-secret-value --region "$REGION" --secret-id "${secret_db_app_user}" --query 'SecretString' --output text)

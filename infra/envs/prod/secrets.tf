@@ -14,8 +14,10 @@
 # Policy must allow CloudWatch Logs service to use the key for the specific
 # log groups, otherwise CreateLogGroup fails with AccessDeniedException.
 resource "aws_kms_key" "app_secrets" {
-  description             = "App secrets, SSM parameters, and log group encryption"
-  deletion_window_in_days = 30
+  description = "App secrets, SSM parameters, and log group encryption"
+  # Dev default: KMS minimum (7). Re-apply creates a new key anyway; this
+  # just minimizes how long the old pending-deletion key sits in the account.
+  deletion_window_in_days = 7
   enable_key_rotation     = true
 
   policy = jsonencode({
@@ -41,8 +43,15 @@ resource "aws_kms_key" "app_secrets" {
         ]
         Resource = "*"
         Condition = {
+          # ArnLike supports a list of patterns (any-match). The first covers
+          # the application/VPC-flow log groups under /<project>/<env>/...;
+          # the second covers AWS WAF logging targets, which must start with
+          # "aws-waf-logs-" per the WAF logging-destination naming rule.
           ArnLike = {
-            "kms:EncryptionContext:aws:logs:arn" = "arn:${data.aws_partition.current.partition}:logs:${var.aws_region}:${var.deployment_account_id}:log-group:/${var.project}/${var.environment}/*"
+            "kms:EncryptionContext:aws:logs:arn" = [
+              "arn:${data.aws_partition.current.partition}:logs:${var.aws_region}:${var.deployment_account_id}:log-group:/${var.project}/${var.environment}/*",
+              "arn:${data.aws_partition.current.partition}:logs:${var.aws_region}:${var.deployment_account_id}:log-group:aws-waf-logs-${var.project}-${var.environment}*",
+            ]
           }
         }
       },
@@ -89,10 +98,14 @@ resource "random_password" "jwt_signing" {
 }
 
 resource "aws_secretsmanager_secret" "db_app_user" {
-  name                    = "${local.secret_prefix}/db/app-user"
-  description             = "App user credentials (least-privileged DB role)"
-  kms_key_id              = aws_kms_key.app_secrets.arn
-  recovery_window_in_days = 7
+  # checkov:skip=CKV2_AWS_57:rotation Lambda is intentionally out of scope for this reference impl; rotation handled manually for dev-only env. Wire aws_secretsmanager_secret_rotation + a rotation Lambda for live use.
+  name        = "${local.secret_prefix}/db/app-user"
+  description = "App user credentials (least-privileged DB role)"
+  kms_key_id  = aws_kms_key.app_secrets.arn
+  # Dev default: 0 = delete immediately on `terraform destroy`. This avoids
+  # the 7-day PendingDeletion window that otherwise blocks a re-apply with
+  # the same secret name. Bump to 7-30 before going live.
+  recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "db_app_user" {
@@ -107,10 +120,14 @@ resource "aws_secretsmanager_secret_version" "db_app_user" {
 # Admin bootstrap (idempotent seed at startup)
 # ----------------------------------------------------------------------------
 resource "aws_secretsmanager_secret" "admin" {
-  name                    = "${local.secret_prefix}/admin"
-  description             = "Bootstrap admin user. Read once at app startup."
-  kms_key_id              = aws_kms_key.app_secrets.arn
-  recovery_window_in_days = 7
+  # checkov:skip=CKV2_AWS_57:bootstrap admin secret read once at app startup; rotation Lambda intentionally out of scope.
+  name        = "${local.secret_prefix}/admin"
+  description = "Bootstrap admin user. Read once at app startup."
+  kms_key_id  = aws_kms_key.app_secrets.arn
+  # Dev default: 0 = delete immediately on `terraform destroy`. This avoids
+  # the 7-day PendingDeletion window that otherwise blocks a re-apply with
+  # the same secret name. Bump to 7-30 before going live.
+  recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "admin" {
@@ -125,10 +142,14 @@ resource "aws_secretsmanager_secret_version" "admin" {
 # JWT signing secret
 # ----------------------------------------------------------------------------
 resource "aws_secretsmanager_secret" "jwt" {
-  name                    = "${local.secret_prefix}/jwt"
-  description             = "HMAC signing key for backend JWT"
-  kms_key_id              = aws_kms_key.app_secrets.arn
-  recovery_window_in_days = 7
+  # checkov:skip=CKV2_AWS_57:JWT signing key rotation requires coordinated app-side key roll; rotation Lambda intentionally out of scope for this reference impl.
+  name        = "${local.secret_prefix}/jwt"
+  description = "HMAC signing key for backend JWT"
+  kms_key_id  = aws_kms_key.app_secrets.arn
+  # Dev default: 0 = delete immediately on `terraform destroy`. This avoids
+  # the 7-day PendingDeletion window that otherwise blocks a re-apply with
+  # the same secret name. Bump to 7-30 before going live.
+  recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "jwt" {
@@ -143,10 +164,14 @@ resource "aws_secretsmanager_secret_version" "jwt" {
 # SES sender config
 # ----------------------------------------------------------------------------
 resource "aws_secretsmanager_secret" "ses" {
-  name                    = "${local.secret_prefix}/ses"
-  description             = "SES sender identity / region configuration"
-  kms_key_id              = aws_kms_key.app_secrets.arn
-  recovery_window_in_days = 7
+  # checkov:skip=CKV2_AWS_57:SES sender config is non-credential JSON (region+identity); rotation does not apply.
+  name        = "${local.secret_prefix}/ses"
+  description = "SES sender identity / region configuration"
+  kms_key_id  = aws_kms_key.app_secrets.arn
+  # Dev default: 0 = delete immediately on `terraform destroy`. This avoids
+  # the 7-day PendingDeletion window that otherwise blocks a re-apply with
+  # the same secret name. Bump to 7-30 before going live.
+  recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "ses" {
@@ -165,12 +190,18 @@ resource "aws_ssm_parameter" "compose_object" {
   # The instance user data downloads docker-compose.prod.yml from this
   # location. The value is set later via CI (or by an operator copying the
   # compose file to S3 and writing the s3:// URI here).
+  # SecureString + CMK to satisfy CKV2_AWS_34 (operationally the value is
+  # an s3:// URI, not a secret, but encryption is cheap and uniform).
   name        = local.ssm_keys.compose_object
   description = "S3 URI of docker-compose.prod.yml used by EC2 user data"
-  type        = "String"
+  type        = "SecureString"
+  key_id      = aws_kms_key.app_secrets.key_id
   value       = "PENDING"
 
   lifecycle {
+    # CI updates the value via `aws ssm put-parameter --overwrite`; ignore so
+    # Terraform doesn't revert it on next apply. Same applies to the three
+    # release-pointer params below.
     ignore_changes = [value]
   }
 }
@@ -178,7 +209,8 @@ resource "aws_ssm_parameter" "compose_object" {
 resource "aws_ssm_parameter" "backend_image_tag" {
   name        = local.ssm_keys.backend_image_tag
   description = "Backend image tag (commit SHA) consumed by user data"
-  type        = "String"
+  type        = "SecureString"
+  key_id      = aws_kms_key.app_secrets.key_id
   value       = var.initial_backend_image_tag
 
   lifecycle {
@@ -188,18 +220,20 @@ resource "aws_ssm_parameter" "backend_image_tag" {
 }
 
 resource "aws_ssm_parameter" "frontend_image_tag" {
-  name  = local.ssm_keys.frontend_image_tag
-  type  = "String"
-  value = var.initial_frontend_image_tag
+  name   = local.ssm_keys.frontend_image_tag
+  type   = "SecureString"
+  key_id = aws_kms_key.app_secrets.key_id
+  value  = var.initial_frontend_image_tag
   lifecycle {
     ignore_changes = [value]
   }
 }
 
 resource "aws_ssm_parameter" "release_id" {
-  name  = local.ssm_keys.release_id
-  type  = "String"
-  value = "bootstrap"
+  name   = local.ssm_keys.release_id
+  type   = "SecureString"
+  key_id = aws_kms_key.app_secrets.key_id
+  value  = "bootstrap"
   lifecycle {
     ignore_changes = [value]
   }

@@ -45,7 +45,16 @@ resource "aws_iam_role_policy_attachment" "ecr_pull" {
 
 # Inline: scoped read of approved secrets, SSM params, and SES send from
 # the approved identity only.
+#
+# Per-statement CKV_AWS_111 / CKV_AWS_356 notes:
+#   - Writes are now scoped to the project's log groups (PutCloudWatchLogs).
+#   - The remaining "*" resources (DescribeLogGroups, GetAuthorizationToken,
+#     SetInstanceHealth) have no resource-level scoping in IAM; the
+#     suppression below documents that.
 data "aws_iam_policy_document" "app_inline" {
+  # checkov:skip=CKV_AWS_356:Remaining wildcard resources are on actions that have no resource-level scoping in IAM (logs:DescribeLogGroups, ecr:GetAuthorizationToken, autoscaling:SetInstanceHealth).
+  # checkov:skip=CKV_AWS_111:Same as above; the write actions logs:Create*/PutLogEvents are scoped to the app log group ARN. SetInstanceHealth is a write action that AWS does not resource-scope.
+
   # Secrets Manager read for known ARNs.
   statement {
     sid    = "ReadAppSecrets"
@@ -83,7 +92,7 @@ data "aws_iam_policy_document" "app_inline" {
     resources = [aws_kms_key.app_secrets.arn]
   }
 
-  # CloudWatch Logs PutLog from app + Docker.
+  # CloudWatch Logs writes scoped to the app log group (group + streams).
   statement {
     sid    = "PutCloudWatchLogs"
     effect = "Allow"
@@ -92,8 +101,18 @@ data "aws_iam_policy_document" "app_inline" {
       "logs:CreateLogStream",
       "logs:PutLogEvents",
       "logs:DescribeLogStreams",
-      "logs:DescribeLogGroups",
     ]
+    resources = [
+      aws_cloudwatch_log_group.app.arn,
+      "${aws_cloudwatch_log_group.app.arn}:*",
+    ]
+  }
+
+  # logs:DescribeLogGroups has no resource-level scoping in IAM.
+  statement {
+    sid       = "DescribeLogGroupsAccountWide"
+    effect    = "Allow"
+    actions   = ["logs:DescribeLogGroups"]
     resources = ["*"]
   }
 

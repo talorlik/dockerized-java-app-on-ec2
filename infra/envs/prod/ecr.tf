@@ -17,7 +17,10 @@ resource "aws_ecr_repository" "this" {
   for_each             = local.ecr_repos
   name                 = each.value
   image_tag_mutability = "IMMUTABLE"
-  force_delete         = false
+  # Dev default: true. Lets `terraform destroy` remove a non-empty repo if
+  # the destroy workflow's image-purge step skipped or partially failed.
+  # Bump to false before going live so accidental destroys can't drop images.
+  force_delete = true
 
   image_scanning_configuration {
     scan_on_push = true

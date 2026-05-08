@@ -11,6 +11,7 @@
 ###############################################################################
 
 module "vpc" {
+  # checkov:skip=CKV_TF_1:source pinned via registry tag (~> 5.13). Commit-hash pinning rejected for upstream-maintained modules; CKV_TF_2 (tag pin) covers the supply-chain intent.
   source  = "terraform-aws-modules/vpc/aws"
   version = "~> 5.13"
 
@@ -71,12 +72,16 @@ resource "aws_security_group" "vpce" {
     cidr_blocks = [var.vpc_cidr]
   }
 
+  # The vpce SG is only attached to interface VPC endpoints, which never
+  # initiate outbound traffic to anything beyond their parent VPC. Restrict
+  # egress to the VPC CIDR (still on TCP/443) so checkov CKV_AWS_382 passes
+  # and the SG's intent is explicit.
   egress {
-    description = "All egress"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    description = "HTTPS replies inside VPC"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
   }
 
   tags = merge(local.common_tags, { Name = "${local.name_prefix}-vpce-sg" })

@@ -13,6 +13,7 @@ data "aws_ssm_parameter" "ubuntu_ami" {
 
 # CloudWatch log group consumed by the CloudWatch agent on the instance.
 resource "aws_cloudwatch_log_group" "app" {
+  # checkov:skip=CKV_AWS_338:dev-only environment, intentional short retention. Bump var.log_retention_days to >=365 for live use and remove this skip.
   name              = "/${var.project}/${var.environment}/app"
   retention_in_days = var.log_retention_days
   kms_key_id        = aws_kms_key.app_secrets.arn
@@ -20,9 +21,10 @@ resource "aws_cloudwatch_log_group" "app" {
 }
 
 resource "aws_ssm_parameter" "log_group_app" {
-  name  = local.ssm_keys.log_group_app
-  type  = "String"
-  value = aws_cloudwatch_log_group.app.name
+  name   = local.ssm_keys.log_group_app
+  type   = "SecureString"
+  key_id = aws_kms_key.app_secrets.key_id
+  value  = aws_cloudwatch_log_group.app.name
 }
 
 # ----------------------------------------------------------------------------
@@ -57,6 +59,7 @@ locals {
 # Launch Template + ASG
 # ----------------------------------------------------------------------------
 module "asg" {
+  # checkov:skip=CKV_TF_1:source pinned via registry tag (~> 7.7). Commit-hash pinning rejected for upstream-maintained modules; CKV_TF_2 (tag pin) covers the supply-chain intent.
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "~> 7.7"
 

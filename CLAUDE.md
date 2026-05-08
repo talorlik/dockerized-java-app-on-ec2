@@ -10,6 +10,14 @@ agent-facing summary plus repo-specific rules.
 Reference implementation for deploying a Dockerized Java app to AWS EC2 behind
 an ALB.
 
+> **Dev-only env.** This stack is currently configured for fast
+> apply/destroy/re-apply iteration, not production. Several "production-safe"
+> defaults (RDS deletion protection, Secrets Manager recovery windows, KMS
+> deletion windows, ECR force_delete, ALB deletion protection, log retention)
+> are flipped. ADR 0007 is the canonical reference for every override and the
+> production-revert checklist. Do not promote this codebase to live without
+> walking that checklist.
+
 - Backend: Spring Boot 3.5.0 (Java 21, Maven), JPA + Flyway against RDS MySQL,
   JWT auth (`jjwt` 0.12.6), Bucket4j rate limiting (8.10.1), AWS SDK v2
   (2.28.16) for Secrets Manager and SES.
@@ -78,7 +86,7 @@ Generated/vendored content the agent must not edit:
 | Language     | Java 21 (Temurin in CI), Node for Playwright only               |
 | Framework    | Spring Boot 3.5.0 parent (see pom.xml `parent.version`)         |
 | Build        | Maven (no wrapper present; use system `mvn`)                    |
-| DB           | MySQL 8.x (RDS in prod, Testcontainers in CI, container locally)|
+| DB           | MySQL 8.4 LTS (RDS in prod, Testcontainers in CI, container locally) |
 | Migrations   | Flyway, files at `app/backend/src/main/resources/db/migration/` |
 | Auth         | Spring Security + jjwt 0.12.6                                    |
 | Rate limit   | Bucket4j 8.10.1                                                  |
@@ -299,8 +307,11 @@ Constraints:
 - `docs/auxiliary/operations_guide/00-prerequisites.md` through
   `docs/auxiliary/operations_guide/05-security-model.md` - operator handoff
   docs.
-- `docs/auxiliary/adr/0001..0006-*.md` - decisions: frontend stack, auth model, WAF,
-  Ubuntu resolution, secret rotation, provider/account model.
+- `docs/auxiliary/adr/0001..0008-*.md` - decisions: frontend stack, auth model,
+  WAF, Ubuntu resolution, secret rotation, provider/account model, dev-only
+  apply/destroy/re-apply defaults, MySQL 8.4 LTS upgrade. ADR 0007 is the
+  canonical reference for every dev-cycle override and the production-revert
+  checklist; ADR 0008 covers the 8.0 -> 8.4 engine bump.
 
 ## 12. Known gaps and unverifieds
 
@@ -315,4 +326,12 @@ Constraints:
   changing ALB target group ports.
 - Maven wrapper (`mvnw`) is not committed; CI uses system `mvn`. If a
   reproducible toolchain is needed, add `mvnw` rather than pinning Maven in
-  CI alone.
+  CI alone. (unverified - `app/backend/mvnw` and `app/backend/mvnw.cmd`
+  appear to exist on disk; reconcile this note with the file tree.)
+- Post-upgrade follow-up tracked from ADR 0008: flip
+  `allow_major_version_upgrade` back to `false` at
+  `infra/envs/prod/rds.tf:68` after the MySQL 8.0 -> 8.4 apply has
+  landed and the smoke test passes. Optionally also remove
+  `apply_immediately = true` (`rds.tf:73`) for a production-safe
+  default. Pre-flight check before the upgrade itself: runbook
+  `docs/auxiliary/operations_guide/runbooks/2026-05-08_appuser_auth_plugin_conversion.md`.

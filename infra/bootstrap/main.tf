@@ -19,8 +19,11 @@ data "aws_partition" "current" {}
 # KMS CMK for state-bucket encryption
 # ----------------------------------------------------------------------------
 resource "aws_kms_key" "tfstate" {
-  description             = "KMS key for Terraform state bucket (${var.state_bucket_name})"
-  deletion_window_in_days = 30
+  description = "KMS key for Terraform state bucket (${var.state_bucket_name})"
+  # Dev default: KMS minimum (7). Bootstrap is intentionally one-time and
+  # should not be destroyed in normal flows; this only matters if you ever
+  # tear down and rebuild the state backend itself.
+  deletion_window_in_days = 7
   enable_key_rotation     = true
 
   policy = jsonencode({
@@ -46,8 +49,20 @@ resource "aws_kms_alias" "tfstate" {
 
 # ----------------------------------------------------------------------------
 # Optional access-log bucket
+#
+# This bucket is the S3 server-access-log target for the tfstate bucket and
+# (by deterministic name) for the prod ALB log bucket as well. It is kept
+# encrypted, versioned, and lifecycle-managed so it satisfies the same
+# baseline as the buckets it serves.
+#
+# checkov skips below cover false positives or out-of-scope requirements for
+# a reference impl: cross-region replication is single-region by design, and
+# event notifications are not consumed by anything in this stack.
 # ----------------------------------------------------------------------------
 resource "aws_s3_bucket" "access_logs" {
+  # checkov:skip=CKV_AWS_144:single-region reference impl; CRR out of scope
+  # checkov:skip=CKV2_AWS_62:no consumer for S3 event notifications
+  # checkov:skip=CKV_AWS_18:bucket logs to itself; access logging on the log target is unnecessary and can loop
   count         = var.enable_access_logging ? 1 : 0
   bucket        = "${var.state_bucket_name}-access-logs"
   force_destroy = false
@@ -70,12 +85,46 @@ resource "aws_s3_bucket_ownership_controls" "access_logs" {
   }
 }
 
+# S3 access-log delivery service writes with the bucket-owner's S3 service
+# account; SSE-KMS with a CMK is rejected on the log-delivery write path.
+# AES256 (SSE-S3) is the supported algorithm for log target buckets and
+# satisfies CKV_AWS_19 (encryption at rest).
 resource "aws_s3_bucket_server_side_encryption_configuration" "access_logs" {
+  # checkov:skip=CKV_AWS_145:S3 server-access log delivery does not support SSE-KMS CMK; AES256 is the supported choice for log target buckets
   count  = var.enable_access_logging ? 1 : 0
   bucket = aws_s3_bucket.access_logs[0].id
   rule {
     apply_server_side_encryption_by_default {
       sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_versioning" "access_logs" {
+  count  = var.enable_access_logging ? 1 : 0
+  bucket = aws_s3_bucket.access_logs[0].id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "access_logs" {
+  count  = var.enable_access_logging ? 1 : 0
+  bucket = aws_s3_bucket.access_logs[0].id
+
+  rule {
+    id     = "expire"
+    status = "Enabled"
+    filter {}
+
+    expiration {
+      days = 90
+    }
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
     }
   }
 }
@@ -86,6 +135,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "access_logs" {
 # NOTE: force_destroy is intentionally false. State buckets must never be
 # accidentally emptied.
 resource "aws_s3_bucket" "tfstate" {
+  # checkov:skip=CKV_AWS_144:single-region reference impl; CRR out of scope
+  # checkov:skip=CKV2_AWS_62:no consumer for S3 event notifications
   bucket        = var.state_bucket_name
   force_destroy = false
 }

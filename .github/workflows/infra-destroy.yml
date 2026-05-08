@@ -289,3 +289,35 @@ jobs:
         run: |
           chmod +x .github/scripts/purge_pending_secrets.sh
           .github/scripts/purge_pending_secrets.sh
+
+      # -------------------------------------------------------------------
+      # 7. Prune stale Terraform state lockfiles. With native S3 locking
+      #    (use_lockfile=true), an apply that dies between "lock" and
+      #    "unlock" leaves a `<key>.tflock` (and sometimes `<key>.tflock.info`)
+      #    object in the state bucket. Without removal the next apply
+      #    fails with "Error acquiring the state lock". Idempotent: lists
+      #    only the lock objects under the prod state prefix and deletes
+      #    if any exist. Runs even if earlier destroy steps failed so a
+      #    half-finished destroy does not wedge the next attempt.
+      # -------------------------------------------------------------------
+      - name: Prune stale tfstate lockfiles
+        if: ${{ always() }}
+        run: |
+          set -euo pipefail
+          BUCKET="java-app-tfstate-${{ vars.DEPLOYMENT_ACCOUNT_ID }}-${{ vars.AWS_REGION }}"
+          PREFIX="java-app/prod/"
+          # List every object whose key matches the lockfile suffixes.
+          KEYS=$(aws s3api list-objects-v2 \
+                   --bucket "$BUCKET" \
+                   --prefix "$PREFIX" \
+                   --query 'Contents[?ends_with(Key, `.tflock`) || ends_with(Key, `.tflock.info`)].Key' \
+                   --output text 2>/dev/null || echo "")
+          if [ -z "$KEYS" ] || [ "$KEYS" = "None" ]; then
+            echo "no stale lockfiles under s3://$BUCKET/$PREFIX"
+            exit 0
+          fi
+          echo "$KEYS" | tr '\t' '\n' | while read -r KEY; do
+            [ -z "$KEY" ] && continue
+            echo "removing s3://$BUCKET/$KEY"
+            aws s3api delete-object --bucket "$BUCKET" --key "$KEY" >/dev/null
+          done

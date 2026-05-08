@@ -81,10 +81,16 @@ jobs:
           docker push ${{ steps.repos.outputs.frontend }}:${{ steps.tag.outputs.tag }}
 
       - name: Update SSM release params
+        # Parameters are created by Terraform as SecureString under the
+        # app-secrets CMK (alias/java-app-prod-secrets). --overwrite preserves
+        # the existing type/key when neither --type nor --key-id is passed,
+        # but we set them explicitly so a put-parameter against a (re-)created
+        # param still lands as SecureString.
         run: |
-          aws ssm put-parameter --name "/java-app/prod/backend-image-tag"  --type String --overwrite --value "${{ steps.tag.outputs.tag }}"
-          aws ssm put-parameter --name "/java-app/prod/frontend-image-tag" --type String --overwrite --value "${{ steps.tag.outputs.tag }}"
-          aws ssm put-parameter --name "/java-app/prod/release-id"         --type String --overwrite --value "${{ github.sha }}"
+          KMS_ALIAS="alias/java-app-prod-secrets"
+          aws ssm put-parameter --name "/java-app/prod/backend-image-tag"  --type SecureString --key-id "$KMS_ALIAS" --overwrite --value "${{ steps.tag.outputs.tag }}"
+          aws ssm put-parameter --name "/java-app/prod/frontend-image-tag" --type SecureString --key-id "$KMS_ALIAS" --overwrite --value "${{ steps.tag.outputs.tag }}"
+          aws ssm put-parameter --name "/java-app/prod/release-id"         --type SecureString --key-id "$KMS_ALIAS" --overwrite --value "${{ github.sha }}"
 
       - name: Resolve ASG name
         id: asg

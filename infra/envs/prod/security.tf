@@ -9,6 +9,7 @@
 # ALB SG - public-facing
 # ----------------------------------------------------------------------------
 resource "aws_security_group" "alb" {
+  # checkov:skip=CKV2_AWS_5:attached to the ALB via module.alb.security_groups; checkov cannot follow the SG ID through the upstream module.
   name        = "${local.name_prefix}-alb-sg"
   description = "Public ALB. Accepts HTTPS on 443 and HTTP on 80 (redirect) from the internet."
   vpc_id      = module.vpc.vpc_id
@@ -28,6 +29,7 @@ resource "aws_vpc_security_group_ingress_rule" "alb_https" {
 # reaches the app tier on port 80; the ALB's own listener handles the
 # redirect locally.
 resource "aws_vpc_security_group_ingress_rule" "alb_http_redirect" {
+  # checkov:skip=CKV_AWS_260:port-80 ingress is required so the ALB can issue HTTP->HTTPS 301 redirects. No app traffic is served on 80; the listener responds locally with redirect_only.
   security_group_id = aws_security_group.alb.id
   description       = "Public HTTP (redirect to HTTPS)"
   ip_protocol       = "tcp"
@@ -49,6 +51,7 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_app" {
 # App SG - private app tier
 # ----------------------------------------------------------------------------
 resource "aws_security_group" "app" {
+  # checkov:skip=CKV2_AWS_5:attached to ASG launch template via module.asg.security_groups; checkov cannot follow the SG ID through the upstream module.
   name        = "${local.name_prefix}-app-sg"
   description = "App tier. Accepts traffic from ALB SG only."
   vpc_id      = module.vpc.vpc_id
@@ -114,6 +117,7 @@ resource "aws_vpc_security_group_egress_rule" "app_to_rds" {
 # RDS SG - private DB tier
 # ----------------------------------------------------------------------------
 resource "aws_security_group" "rds" {
+  # checkov:skip=CKV2_AWS_5:attached to RDS via module.rds.vpc_security_group_ids; checkov cannot follow the SG ID through the upstream module.
   name        = "${local.name_prefix}-rds-sg"
   description = "RDS MySQL. Accepts 3306 from app SG only."
   vpc_id      = module.vpc.vpc_id

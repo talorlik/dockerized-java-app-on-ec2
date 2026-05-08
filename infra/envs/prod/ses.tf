@@ -18,6 +18,9 @@ resource "aws_route53_record" "ses_dkim" {
   type    = "CNAME"
   ttl     = 600
   records = ["${aws_sesv2_email_identity.sender.dkim_signing_attributes[0].tokens[count.index]}.dkim.amazonses.com"]
+  # Same reasoning as aws_route53_record.app_alias - tolerate stale records
+  # left over by a partial infra-destroy.
+  allow_overwrite = true
 }
 
 resource "aws_sesv2_configuration_set" "app" {

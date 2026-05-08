@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MigrationsIT {
 
     @Container
-    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
+    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.4")
         .withDatabaseName("javaapp")
         .withUsername("test")
         .withPassword("test");
