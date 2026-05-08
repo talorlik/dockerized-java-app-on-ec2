@@ -135,6 +135,115 @@ available without `INSTALL COMPONENT 'file://component_mysql_native_password'`,
 which RDS does not expose. Do not roll the engine back; restore from the
 manual pre-upgrade snapshot per ADR 0008's rollback section if needed.
 
+## Manual snapshot cleanup
+
+RDS manual snapshots have no native TTL and persist until deleted.
+After a successful upgrade and burn-in window, drop the pre-upgrade
+snapshot (and any sibling artifacts) to stop accruing storage cost
+(~$0.095/GB-month in `us-east-1`, unverified).
+
+Replace `<profile>` with the AWS profile that has
+`rds:DescribeDBSnapshots` and `rds:DeleteDBSnapshot` against the
+deployment account.
+
+### List manual snapshots for the instance
+```bash
+aws rds describe-db-snapshots \
+  --profile <profile> \
+  --region us-east-1 \
+  --db-instance-identifier java-app-prod-mysql \
+  --snapshot-type manual \
+  --query "DBSnapshots[].[DBSnapshotIdentifier,SnapshotCreateTime,Status,AllocatedStorage]" \
+  --output table
+```
+
+### Delete a specific manual snapshot
+```bash
+aws rds delete-db-snapshot \
+  --profile <profile> \
+  --region us-east-1 \
+  --db-snapshot-identifier java-app-prod-mysql-pre-8-4
+```
+Idempotent on AWS side - deleting an already-deleted snapshot returns
+`DBSnapshotNotFoundFault`. The CLI exits non-zero; safe to ignore for
+cleanup scripts.
+
+### Delete every manual snapshot for the instance
+Use only when you have verified no snapshot is still needed for
+rollback. Lists, prompts per id, deletes on `y`.
+```bash
+aws rds describe-db-snapshots \
+  --profile <profile> \
+  --region us-east-1 \
+  --db-instance-identifier java-app-prod-mysql \
+  --snapshot-type manual \
+  --query "DBSnapshots[].DBSnapshotIdentifier" \
+  --output text \
+| tr '\t' '\n' \
+| while read -r SNAP; do
+    [ -z "$SNAP" ] && continue
+    read -r -p "delete $SNAP? [y/N] " ANS
+    [ "$ANS" = "y" ] || continue
+    aws rds delete-db-snapshot \
+      --profile <profile> \
+      --region us-east-1 \
+      --db-snapshot-identifier "$SNAP"
+  done
+```
+
+### Delete all manual snapshots whose id matches a prefix
+Useful when you took multiple pre-upgrade snapshots (e.g.
+`java-app-prod-mysql-pre-8-4-take1`, `-take2`).
+```bash
+PREFIX="java-app-prod-mysql-pre-8-4"
+aws rds describe-db-snapshots \
+  --profile <profile> \
+  --region us-east-1 \
+  --db-instance-identifier java-app-prod-mysql \
+  --snapshot-type manual \
+  --query "DBSnapshots[?starts_with(DBSnapshotIdentifier,'$PREFIX')].DBSnapshotIdentifier" \
+  --output text \
+| tr '\t' '\n' \
+| while read -r SNAP; do
+    [ -z "$SNAP" ] && continue
+    aws rds delete-db-snapshot \
+      --profile <profile> \
+      --region us-east-1 \
+      --db-snapshot-identifier "$SNAP"
+  done
+```
+
+### Verify nothing is left
+```bash
+aws rds describe-db-snapshots \
+  --profile <profile> \
+  --region us-east-1 \
+  --db-instance-identifier java-app-prod-mysql \
+  --snapshot-type manual \
+  --query "length(DBSnapshots)" \
+  --output text
+```
+Expected: `0` (or whatever count of intentionally-retained snapshots).
+
+### Safety rails
+- `--snapshot-type manual` is mandatory. Omitting it includes
+  automated snapshots, which `delete-db-snapshot` cannot delete and
+  which RDS lifecycles per the instance's `backup_retention_period`.
+- Never delete a snapshot referenced by a `db-instance-restore` you
+  have not yet validated. Restore + smoke test first, then delete.
+- Cross-region copies: `describe-db-snapshots` returns only the
+  region you query. If the snapshot was copied to another region for
+  DR, repeat per region.
+
+### Bulk cleanup via the destroy workflow
+For full-stack teardown (not a targeted snapshot sweep), the
+`infra-destroy.yml` GitHub Actions workflow exposes a
+`delete_manual_snapshots` boolean input (default `true`). When set, the
+workflow runs the prefix-batch deletion above as its post-destroy
+step 6. Use this only when destroying the env entirely; the safer
+manual sweeps are the per-id and prefix commands earlier in this
+section.
+
 ## Audit trail
 - Action target: `mysql.user` row for `('appuser', '%')`.
 - Recorded by: AWS CloudTrail (RDS API calls), MySQL general log

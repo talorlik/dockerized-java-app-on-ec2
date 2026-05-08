@@ -16,6 +16,11 @@
 #   4. Disable ALB deletion protection (TF can't destroy a protected ALB
 #      and the resource attribute is set to `true` in module/alb.tf).
 #   5. terraform init + destroy against `infra/envs/prod`.
+#   6. Optional: delete manual RDS snapshots whose identifier starts with
+#      the instance prefix (independent of the deleted DB instance; persist
+#      forever otherwise). Gated on the `delete_manual_snapshots` input.
+#   7. Force-purge Secrets Manager secrets stuck in PendingDeletion.
+#   8. Prune stale Terraform state lockfiles in the state bucket.
 #
 # Run sparingly. The whole point of the bootstrap stack staying intact is
 # that the next `infra-apply` rebuilds the env without you re-creating the
@@ -32,6 +37,11 @@ on:
         default: ''
       run_app_cleanup:
         description: 'First run app-layer cleanup (recommended)'
+        type: boolean
+        required: false
+        default: true
+      delete_manual_snapshots:
+        description: 'Also delete all manual RDS snapshots for the instance (NO recovery after this)'
         type: boolean
         required: false
         default: true
@@ -275,7 +285,33 @@ jobs:
           terraform destroy -input=false -auto-approve
 
       # -------------------------------------------------------------------
-      # 6. Force-purge Secrets Manager secrets that Terraform left in
+      # 6. Delete manual RDS snapshots (opt-in via input).
+      #    Manual snapshots are independent of the now-deleted DB instance
+      #    and persist until explicitly removed. Filtering by identifier
+      #    prefix scopes the sweep to this stack's snapshots only. The
+      #    earlier "Prepare RDS for destroy" step handles automated-backup
+      #    orphans; this is the manual-snapshot equivalent.
+      # -------------------------------------------------------------------
+      - name: Delete manual RDS snapshots
+        if: ${{ github.event.inputs.delete_manual_snapshots == 'true' }}
+        run: |
+          set -euo pipefail
+          PREFIX="java-app-prod-mysql"
+          SNAPS=$(aws rds describe-db-snapshots \
+                    --snapshot-type manual \
+                    --query "DBSnapshots[?starts_with(DBSnapshotIdentifier,'$PREFIX')].DBSnapshotIdentifier" \
+                    --output text 2>/dev/null || true)
+          if [ -z "$SNAPS" ]; then
+            echo "no manual snapshots matching prefix $PREFIX"
+            exit 0
+          fi
+          for SNAP in $SNAPS; do
+            echo "deleting manual snapshot $SNAP"
+            aws rds delete-db-snapshot --db-snapshot-identifier "$SNAP" || true
+          done
+
+      # -------------------------------------------------------------------
+      # 7. Force-purge Secrets Manager secrets that Terraform left in
       #    PendingDeletion state. Without this, the next `infra-apply`
       #    fails with InvalidRequestException ("a secret with this name
       #    is already scheduled for deletion") for the 7-day recovery
@@ -291,7 +327,7 @@ jobs:
           .github/scripts/purge_pending_secrets.sh
 
       # -------------------------------------------------------------------
-      # 7. Prune stale Terraform state lockfiles. With native S3 locking
+      # 8. Prune stale Terraform state lockfiles. With native S3 locking
       #    (use_lockfile=true), an apply that dies between "lock" and
       #    "unlock" leaves a `<key>.tflock` (and sometimes `<key>.tflock.info`)
       #    object in the state bucket. Without removal the next apply
