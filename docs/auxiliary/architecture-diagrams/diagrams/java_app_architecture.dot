@@ -121,7 +121,7 @@ security/waf.png",
 				fontcolor="#2D3436",
 				fontname="Sans-Serif",
 				fontsize=13,
-				label="HTTPS 8443",
+				label="HTTPS 443",
 				lp="509,1844.4",
 				pos="e,560,1804.4 459.28,1952.8 503.21,1952.8 560,1952.8 560,1952.8 560,1952.8 560,1815.9 560,1815.9"];
 			"0562ce971de84d34bf15b45591a5ea04"	[height=1.9,
@@ -134,7 +134,7 @@ security/certificate-manager.png",
 				image="/Users/talo/www/dockerized-java-app-on-ec2/docs/auxiliary/architecture-diagrams/venv/lib/python3.13/site-packages/resources/aws/\
 network/elb-application-load-balancer.png",
 				label="ALB
-HTTPS 8443 -> HTTP 8080",
+HTTPS 443 -> HTTP 8080",
 				pos="453,1505.5",
 				shape=none];
 			"0562ce971de84d34bf15b45591a5ea04" -> e5826869de3d4d81891330af81e41fb3	[dir=forward,

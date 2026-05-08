@@ -27,7 +27,7 @@ components:
   `release-id`)
 - **40-runtime-ec2-asg**: **EC2 Launch Template + Auto Scaling Group** in
   private app subnets, running **Docker Compose** workloads
-- **50-edge-routing**: **ALB** listener on `8443` with ACM TLS, Route 53
+- **50-edge-routing**: **ALB** listener on `443` with ACM TLS, Route 53
   alias for `java.talorlik.com`
 - **60-observability-and-security**: CloudWatch metrics/logs/alarms, ALB access
   logs, WAFv2 at ALB, IAM/Secrets Manager controls
@@ -56,7 +56,7 @@ on AWS architecture diagrams. Include them explicitly:
   resolution and ALB alias record(s). If domain is external, show **DNS
   delegation** (NS records at registrar to Route 53 name servers).
 - **ACM certificate** - In the **deployment account**, same region as ALB.
-  Used for TLS on ALB listener `8443`; validated through DNS record(s) in the
+  Used for TLS on ALB listener `443`; validated through DNS record(s) in the
   hosted zone.
 - **GitHub OIDC provider** - In deployment account; allows GitHub Actions to
   assume IAM role without long-lived credentials.
@@ -92,7 +92,7 @@ In addition:
 
 **Deployment account:**
 
-- ACM certificate for ALB listener on `8443`
+- ACM certificate for ALB listener on `443`
 - IAM role chain from GitHub Actions to domain DNS role
 
 ### 3) Network (deployment account)
@@ -103,7 +103,7 @@ In addition:
 - Private DB subnets (>=2 AZs): RDS MySQL
 - Route tables (public, private app, private DB)
 - Security groups:
-  - ALB SG: inbound `8443` from internet, outbound to app on `8080`
+  - ALB SG: inbound `443` from internet, outbound to app on `8080`
   - App SG: inbound `8080` from ALB SG, outbound to RDS and AWS APIs
   - RDS SG: inbound `3306` from App SG only
 - VPC endpoints (where modeled): S3 (gateway), ECR API/DKR, SSM/Secrets
@@ -138,7 +138,7 @@ Use arrows and label important flows (protocol/port or mechanism).
 
 ### User traffic
 
-- Users -> Route 53 -> ALB (`HTTPS 8443`, TLS via ACM) -> EC2 instances
+- Users -> Route 53 -> ALB (`HTTPS 443`, TLS via ACM) -> EC2 instances
   (`HTTP 8080`) -> Nginx frontend and backend API
 
 ### Application dependencies
@@ -197,8 +197,8 @@ distinct from **data-plane** flows (user traffic, API/DB traffic).
   - `java.talorlik.com`
   - `github-role`
   - Route 53 cross-account DNS role
-  - ALB `8443` -> EC2 `8080`
-- Label key connections (e.g. `HTTPS 8443`, `HTTP 8080`, `MySQL 3306`,
+  - ALB `443` -> EC2 `8080`
+- Label key connections (e.g. `HTTPS 443`, `HTTP 8080`, `MySQL 3306`,
   `OIDC`, `AssumeRole`).
 - Do **not** include implementation-only details such as full Terraform state
   internals, exact SSM path format templates, or workflow input minutiae.

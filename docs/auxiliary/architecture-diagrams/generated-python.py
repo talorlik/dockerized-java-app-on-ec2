@@ -137,7 +137,7 @@ def build_diagram() -> str:
                     route53_alias = Route53("java.talorlik.com")
                     acm = CertificateManager("ACM Certificate")
                     waf = WAF("WAFv2 Web ACL")
-                    alb = ElbApplicationLoadBalancer("ALB\nHTTPS 8443 -> HTTP 8080")
+                    alb = ElbApplicationLoadBalancer("ALB\nHTTPS 443 -> HTTP 8080")
 
                 with Cluster(
                     "SECURITY AND CONFIG",
@@ -182,7 +182,7 @@ def build_diagram() -> str:
 
             users >> Edge(label="DNS lookup") >> route53_alias
             route53_alias >> Edge(label="A/ALIAS") >> hosted_zone
-            route53_alias >> Edge(label="HTTPS 8443") >> waf >> alb
+            route53_alias >> Edge(label="HTTPS 443") >> waf >> alb
             acm >> Edge(label="TLS cert") >> alb
             alb >> Edge(label="HTTP 8080") >> asg >> ec2 >> containers
             containers >> Edge(label="/api -> backend") >> containers

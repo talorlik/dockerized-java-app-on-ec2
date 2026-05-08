@@ -44,7 +44,7 @@ Core runtime principles:
 ```mermaid
 flowchart TD
   user[End User Browser] --> dns[Route53: java.talorlik.com]
-  dns --> alb[Public ALB: HTTPS 8443]
+  dns --> alb[Public ALB: HTTPS 443]
   alb --> waf[AWS WAFv2 Web ACL]
   waf --> asg[Private EC2 Auto Scaling Group]
 
@@ -86,7 +86,7 @@ flowchart TD
 
 ## 7. Network and Security Boundaries
 
-- ALB is the only public ingress on TCP `8443`
+- ALB is the only public ingress on TCP `443`
 - EC2 instances run in private app subnets and receive traffic only from ALB
 - RDS runs in private DB subnets and accepts TCP `3306` only from app SG
 - No SSH public ingress; operational access uses SSM Session Manager
@@ -197,7 +197,7 @@ Release metadata keys:
 
 The architecture is considered valid when these conditions hold in production:
 
-- `https://java.talorlik.com:8443` serves valid TLS via ALB
+- `https://java.talorlik.com` serves valid TLS via ALB
 - At least two healthy app instances are in service behind ALB
 - The sample app flows (signup, verification, login, profile, admin) work
   end-to-end

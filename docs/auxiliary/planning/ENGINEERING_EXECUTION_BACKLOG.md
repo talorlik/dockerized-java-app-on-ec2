@@ -99,7 +99,7 @@ traffic paths are possible.
 
 Acceptance tests:
 
-- ALB SG allows inbound TCP `8443` from internet.
+- ALB SG allows inbound TCP `443` from internet.
 - App SG allows inbound TCP `8080` only from ALB SG.
 - RDS SG allows inbound TCP `3306` only from App SG.
 - No broad inbound rule to EC2 or RDS from `0.0.0.0/0`.
@@ -163,7 +163,7 @@ transit.
 Acceptance tests:
 
 - Internet-facing ALB exists in public subnets.
-- HTTPS listener on port `8443` uses ACM certificate.
+- HTTPS listener on port `443` uses ACM certificate.
 - Target group points to app instances on HTTP `8080`.
 - Health check endpoint is configured.
 
@@ -348,12 +348,12 @@ Acceptance tests:
 
 ### Story E8-S2: Build Infrastructure Plan Workflow
 
-As an infra reviewer, I want plan visibility in pull requests so that infra
-changes are reviewable before apply.
+As an infra reviewer, I want plan visibility before apply so that infra
+changes are reviewable.
 
 Acceptance tests:
 
-- `infra-plan.yml` triggers on `infra/**` PR changes.
+- `infra-plan.yml` is run via manual dispatch.
 - Plan output is uploaded or summarized in PR.
 
 ### Story E8-S3: Build Infrastructure Apply Workflow
@@ -505,7 +505,7 @@ A story is complete only when all are true:
 
 ## 17. Release Readiness Checklist
 
-- Production endpoint responds over valid TLS on `:8443`.
+- Production endpoint responds over valid TLS on `:443`.
 - ASG has at least 2 healthy in-service instances.
 - App uses shared RDS and required secrets.
 - Core user and admin flows pass end-to-end test run.

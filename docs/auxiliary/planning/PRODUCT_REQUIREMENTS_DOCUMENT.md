@@ -30,7 +30,7 @@ assumptions and complete operational documentation.
 
 ### 3.2 Measurable Success Criteria
 
-- HTTPS traffic serves successfully at `https://java.talorlik.com:8443`.
+- HTTPS traffic serves successfully at `https://java.talorlik.com`.
 - At least 2 healthy app instances are running behind the ALB in production.
 - Signup, verification, login, profile, and admin flows are end-to-end working.
 - New container image releases roll out through ASG Instance Refresh.
@@ -79,7 +79,7 @@ assumptions and complete operational documentation.
 
 ### 7.1 Topology
 
-- Public ALB receives internet HTTPS traffic on port `8443`.
+- Public ALB receives internet HTTPS traffic on port `443`.
 - ALB forwards HTTP traffic on port `8080` to EC2 instances in private subnets.
 - EC2 instances run Docker Compose with frontend and backend services.
 - RDS MySQL runs in private DB subnets and is accessed only by app tier.
@@ -128,7 +128,7 @@ assumptions and complete operational documentation.
 
 ### 8.5 FR-INFRA-05: Security Groups
 
-- ALB SG shall allow inbound TCP `8443` from internet.
+- ALB SG shall allow inbound TCP `443` from internet.
 - App SG shall allow inbound TCP `8080` only from ALB SG.
 - RDS SG shall allow inbound TCP `3306` only from App SG.
 
@@ -166,7 +166,7 @@ assumptions and complete operational documentation.
 ### 8.10 FR-INFRA-10: ALB, TLS, And DNS
 
 - Public ALB shall terminate TLS with ACM certificate.
-- Listener shall use HTTPS on `8443`.
+- Listener shall use HTTPS on `443`.
 - Target group shall forward HTTP `8080` to app instances.
 - Route53 shall publish alias `A` record for `java.talorlik.com`.
 
@@ -247,7 +247,7 @@ assumptions and complete operational documentation.
 
 ### 8.20 FR-CICD-01: CI Validation Workflow
 
-- CI workflow shall run on pull requests and feature branch pushes.
+- CI workflow shall run via manual dispatch or reusable `workflow_call`.
 - CI shall include:
   - Backend unit tests
   - Backend integration tests
@@ -260,18 +260,18 @@ assumptions and complete operational documentation.
 
 ### 8.21 FR-CICD-02: Infrastructure Plan Workflow
 
-- Infra plan workflow shall trigger on `infra/**` pull request changes.
+- Infra plan workflow shall trigger via manual dispatch.
 - Workflow shall run terraform init/fmt/validate/plan.
 - Plan output shall be published as artifact or PR summary.
 
 ### 8.22 FR-CICD-03: Infrastructure Apply Workflow
 
-- Infra apply workflow shall trigger on `main` merges or manual dispatch.
+- Infra apply workflow shall trigger via manual dispatch.
 - Workflow shall perform init/plan/apply and publish key outputs.
 
 ### 8.23 FR-CICD-04: Application Deploy Workflow
 
-- App deploy workflow shall trigger after validated main merges or manually.
+- App deploy workflow shall trigger via manual dispatch.
 - Workflow shall:
   - Build and push backend/frontend images
   - Update release parameters in SSM
@@ -390,7 +390,7 @@ assumptions and complete operational documentation.
 Product shall be accepted when all below are true in production:
 
 - Network architecture: ALB public, EC2 and RDS private.
-- TLS endpoint: `java.talorlik.com:8443` serves valid HTTPS certificate.
+- TLS endpoint: `java.talorlik.com` serves valid HTTPS certificate.
 - Scaling baseline: minimum 2 ASG instances across private app subnets.
 - Self-healing: terminated instance is replaced and re-enters healthy state.
 - Deployment path: new image tag initiates successful ASG instance refresh.

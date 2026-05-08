@@ -70,8 +70,8 @@ Two workflows, in this order:
 2. `gh workflow run infra-destroy.yml -f confirm=DESTROY` -
    re-runs app cleanup if `run_app_cleanup=true` (default), disables ALB
    access logs and deletion protection, empties the ALB-logs and config
-   buckets (versioned), removes the EC2 Auto Scaling and ELB
-   service-linked roles from state, disables RDS deletion protection +
+   buckets (versioned), ensures required EC2 Auto Scaling and ELB
+   service-linked roles exist, disables RDS deletion protection +
    purges retained automated backups, then runs `terraform destroy` with
    `TF_VAR_rds_skip_final_snapshot=true`,
    `TF_VAR_rds_delete_automated_backups=true`,

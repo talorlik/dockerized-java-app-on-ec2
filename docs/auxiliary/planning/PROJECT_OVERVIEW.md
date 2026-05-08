@@ -5,7 +5,7 @@
 ```text
 Internet
   |
-  | HTTPS :8443
+  | HTTPS :443
   v
 Route53 A alias: java.talorlik.com
   |
@@ -40,7 +40,7 @@ Local development can use a `mysql` service in `docker-compose.local.yml`.
 | DB               | Amazon RDS MySQL in private DB subnets                                                  |
 | Local DB         | MySQL container only for local development and CI integration tests                     |
 | Runtime          | EC2 Auto Scaling Group + Launch Template + Docker Compose                               |
-| Public access    | ALB listener on HTTPS `8443`, target group to EC2 port `8080`                           |
+| Public access    | ALB listener on HTTPS `443`, target group to EC2 port `8080`                            |
 | DNS              | Route53 A alias: `java.talorlik.com` -> ALB DNS name                                    |
 | CI/CD            | GitHub Actions using OIDC into existing `github-role`                                   |
 | Deployment style | Push image to ECR, update release parameter, trigger ASG Instance Refresh               |
@@ -48,7 +48,7 @@ Local development can use a `mysql` service in `docker-compose.local.yml`.
 
 ALB supports HTTPS listeners with certificates and custom listener ports, and
 target groups can forward to targets on any port in the `1-65535` range, so
-`8443 -> 8080` is valid. ([AWS Documentation][1])
+`443 -> 8080` is valid. ([AWS Documentation][1])
 
 ## Phase 0 - Repository and project structure
 
@@ -266,7 +266,7 @@ RDS accepts traffic only from the application security group.
 
 | Security group | Inbound                | Outbound                            |
 | -------------- | ---------------------- | ----------------------------------- |
-| ALB SG         | `0.0.0.0/0` TCP `8443` | App SG TCP `8080`                   |
+| ALB SG         | `0.0.0.0/0` TCP `443` | App SG TCP `8080`                    |
 | App SG         | ALB SG TCP `8080`      | RDS SG TCP `3306`, HTTPS `443`      |
 | RDS SG         | App SG TCP `3306`      | None required for normal DB serving |
 
@@ -395,7 +395,7 @@ Use `terraform-aws-modules/alb/aws`.
 Create:
 
 - Internet-facing ALB in public subnets.
-- HTTPS listener on port `8443`.
+- HTTPS listener on port `443`.
 - Existing ACM certificate ARN from DEPLOYMENT account.
 - Target group:
 
@@ -701,8 +701,8 @@ application deployment should be separate workflows.
 
 Triggers:
 
-- Pull request.
-- Push to feature branches.
+- Manual dispatch.
+- `workflow_call` (used as a reusable gate by `app-deploy.yml`).
 
 Jobs:
 
@@ -720,7 +720,7 @@ Deployment is not allowed from this workflow.
 
 Triggers:
 
-- Pull request touching `infra/**`.
+- Manual dispatch.
 
 Actions:
 
@@ -735,7 +735,6 @@ Actions:
 
 Triggers:
 
-- Merge to `main`.
 - Manual dispatch.
 
 Actions:
@@ -750,7 +749,6 @@ Actions:
 
 Triggers:
 
-- Merge to `main` after CI passes.
 - Manual dispatch with image tag.
 
 Actions:
@@ -762,7 +760,7 @@ Actions:
 5. Update SSM release parameters.
 6. Start ASG Instance Refresh.
 7. Poll refresh status.
-8. Run post-deploy smoke test against `https://java.talorlik.com:8443/health`.
+8. Run post-deploy smoke test against `https://java.talorlik.com/actuator/health`.
 
 GitHub environments can add deployment protection rules and environment-scoped
 secrets. ([GitHub Docs][28])
@@ -916,7 +914,7 @@ Logs:
 11. Run `infra/envs/prod`.
 12. Confirm ALB target group health.
 13. Confirm Route53 A alias resolves.
-14. Confirm `https://java.talorlik.com:8443`.
+14. Confirm `https://java.talorlik.com`.
 15. Retrieve admin credentials from Secrets Manager.
 16. Login as admin.
 17. Verify signup and email verification.
@@ -926,7 +924,7 @@ Logs:
 | Domain        | Acceptance criteria                                                   |
 | ------------- | --------------------------------------------------------------------- |
 | Network       | ALB is public, EC2/RDS are private                                    |
-| TLS           | `java.talorlik.com:8443` serves HTTPS with ACM cert                   |
+| TLS           | `java.talorlik.com` serves HTTPS with ACM cert                        |
 | Scaling       | ASG launches at least 2 instances across private subnets              |
 | Self-healing  | Terminated instance is replaced and app becomes healthy automatically |
 | Deployment    | New image tag triggers ASG Instance Refresh                           |

@@ -13,6 +13,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  docs-drift:
+    name: docs drift guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Run docs drift check script
+        run: |
+          chmod +x .github/scripts/docs_drift_check.sh
+          .github/scripts/docs_drift_check.sh
+
   backend:
     name: backend tests
     runs-on: ubuntu-latest

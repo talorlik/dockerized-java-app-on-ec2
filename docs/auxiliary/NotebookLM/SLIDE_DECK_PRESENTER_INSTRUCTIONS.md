@@ -20,7 +20,7 @@ Explain problem -> architecture -> delivery -> operations, with emphasis on **wh
 
 **1. Problem &amp; Solution** - Need a secure, scalable, repeatable Java app platform. Solution uses Terraform, EC2 ASG, Docker Compose, RDS MySQL, and GitHub Actions. Explain *why* this pragmatic stack.
 
-**2. Target Architecture &amp; Traffic Flow** - `java.talorlik.com` -> ALB `8443` -> EC2 ASG `8080`; Nginx frontend proxies `/api/` to Spring Boot; backend uses RDS, Secrets Manager, SES. Explain *why* edge/public + compute/private split.
+**2. Target Architecture &amp; Traffic Flow** - `java.talorlik.com` -> ALB `443` -> EC2 ASG `8080`; Nginx frontend proxies `/api/` to Spring Boot; backend uses RDS, Secrets Manager, SES. Explain *why* edge/public + compute/private split.
 
 **3. Infrastructure Foundation &amp; State Strategy** - Terraform remote S3 state with locking; production infra files split by concern. Explain *why* state safety and modular IaC matter.
 
@@ -36,7 +36,7 @@ Explain problem -> architecture -> delivery -> operations, with emphasis on **wh
 
 **9. Observability &amp; Operations** - CloudWatch metrics/logs, ALB logs to S3, key alarms/dashboards, post-deploy smoke checks. Explain *why* this is sufficient for safe day-2 operations.
 
-**10. Conclusion: End-State** - HTTPS at `java.talorlik.com:8443`, >=2 healthy app instances, private RDS, secure secrets, repeatable runbooks. Define what "production done" means.
+**10. Conclusion: End-State** - HTTPS at `java.talorlik.com`, >=2 healthy app instances, private RDS, secure secrets, repeatable runbooks. Define what "production done" means.
 
 ## Narrative Focus (Why)
 

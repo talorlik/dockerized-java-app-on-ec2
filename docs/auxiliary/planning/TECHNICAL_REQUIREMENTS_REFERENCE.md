@@ -24,7 +24,7 @@ It is optimized for both humans and models by using:
 
 ### 3.1 Production Architecture
 
-- Ingress path: Internet -> Route53 alias -> ALB HTTPS `8443` -> EC2 HTTP `8080`
+- Ingress path: Internet -> Route53 alias -> ALB HTTPS `443` -> EC2 HTTP `8080`
 - Runtime: Docker Compose on private ASG instances
 - Services:
   - Frontend container (Nginx static site and reverse proxy)
@@ -157,7 +157,7 @@ Verification:
 
 Requirements:
 
-- `TR-SG-001`: ALB SG allows inbound `8443` from `0.0.0.0/0`.
+- `TR-SG-001`: ALB SG allows inbound `443` from `0.0.0.0/0`.
 - `TR-SG-002`: App SG allows inbound `8080` only from ALB SG.
 - `TR-SG-003`: RDS SG allows inbound `3306` only from App SG.
 - `TR-SG-004`: No direct public ingress to EC2 or RDS.
@@ -245,7 +245,7 @@ Verification:
 Requirements:
 
 - `TR-ALB-001`: ALB is internet-facing in public subnets.
-- `TR-ALB-002`: HTTPS listener runs on `8443` with ACM certificate.
+- `TR-ALB-002`: HTTPS listener runs on `443` with ACM certificate.
 - `TR-ALB-003`: Target group forwards to instance targets on `8080`.
 - `TR-ALB-004`: Health check path uses backend health endpoint.
 
@@ -486,7 +486,7 @@ Verification:
 
 Requirements:
 
-- `TR-CI-005`: `infra-plan.yml` triggers on infra pull requests.
+- `TR-CI-005`: `infra-plan.yml` triggers via manual dispatch.
 - `TR-CI-006`: Plan output is exported for review.
 
 Verification:
@@ -632,7 +632,7 @@ Verification:
 
 ### 16.1 Service Ports
 
-- ALB listener: `8443` (HTTPS)
+- ALB listener: `443` (HTTPS)
 - App target group: `8080` (HTTP)
 - Frontend host mapping: `8080:80`
 - Backend app port: `8080`

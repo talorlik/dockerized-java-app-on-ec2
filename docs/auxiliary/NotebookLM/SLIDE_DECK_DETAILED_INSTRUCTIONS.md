@@ -46,7 +46,7 @@ backgrounds, and subtle data-flow grid accents.
 
 ### 3. Runtime Architecture - ALB, EC2, Containers, and Data Path
 
-- **Traffic flow:** Internet → ALB HTTPS listener on `8443` → target group
+- **Traffic flow:** Internet → ALB HTTPS listener on `443` → target group
   instance port `8080` → frontend Nginx container → `/api/` proxy to backend
   Spring Boot container.
 - **Compute/data placement:** ALB in public subnets, EC2 Auto Scaling Group in
@@ -56,8 +56,8 @@ backgrounds, and subtle data-flow grid accents.
 
 ### 4. CI/CD and Release Flow
 
-- **Infra pipeline:** `infra-plan.yml` validates PR-time infra changes;
-  `infra-apply.yml` applies on `main` or manual dispatch.
+- **Infra pipeline:** `infra-plan.yml` and `infra-apply.yml` run via manual
+  dispatch for controlled planning/apply execution.
 - **Application pipeline:** `app-deploy.yml` builds backend/frontend images,
   tags with `${GITHUB_SHA}`, pushes to ECR, updates SSM release parameters, and
   triggers ASG instance refresh.

@@ -58,7 +58,7 @@ docs/
 
 2. DERIVE THE DIAGRAM SET
    - Produce **one unified diagram** (or a small set of views) for the **entire project**. Merge data from all layers into a single model; do not output one diagram per layer. The diagram set should cover, at minimum:
-     - HIGH-LEVEL RUNTIME TOPOLOGY: Users -> Route 53 -> ALB `:8443` ->
+    - HIGH-LEVEL RUNTIME TOPOLOGY: Users -> Route 53 -> ALB `:443` ->
       EC2 ASG (Nginx + Spring Boot containers) -> RDS MySQL, Secrets Manager,
       ECR, Parameter Store, and SES.
      - NETWORK TOPOLOGY: VPC, subnets (public/private app/private db), NAT,

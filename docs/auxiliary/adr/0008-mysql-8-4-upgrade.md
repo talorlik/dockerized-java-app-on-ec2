@@ -175,7 +175,7 @@ To rotate the `appuser` password manually:
 ## Post-upgrade follow-ups
 
 After the 8.0 -> 8.4 apply has succeeded in prod and the smoke test
-passes (`https://java.talorlik.com:8443/actuator/health` returns
+passes (`https://java.talorlik.com/actuator/health` returns
 `status=UP`, app logs show no JDBC reconnect storm, RDS console shows
 the instance available on engine `mysql 8.4.x`), open a follow-up PR
 that flips the upgrade gate back off:

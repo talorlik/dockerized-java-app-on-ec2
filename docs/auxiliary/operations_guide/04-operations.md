@@ -57,9 +57,10 @@ gh workflow run app-deploy.yml
 Or manually:
 
 ```bash
-aws ssm put-parameter --name /java-app/prod/backend-image-tag  --type String --overwrite --value sha-XXXX
-aws ssm put-parameter --name /java-app/prod/frontend-image-tag --type String --overwrite --value sha-XXXX
-aws ssm put-parameter --name /java-app/prod/release-id         --type String --overwrite --value "<rid>"
+KMS_ALIAS="alias/java-app-prod-secrets"
+aws ssm put-parameter --name /java-app/prod/backend-image-tag  --type SecureString --key-id "$KMS_ALIAS" --overwrite --value sha-XXXX
+aws ssm put-parameter --name /java-app/prod/frontend-image-tag --type SecureString --key-id "$KMS_ALIAS" --overwrite --value sha-XXXX
+aws ssm put-parameter --name /java-app/prod/release-id         --type SecureString --key-id "$KMS_ALIAS" --overwrite --value "<rid>"
 
 aws autoscaling start-instance-refresh \
   --auto-scaling-group-name java-app-prod-asg \

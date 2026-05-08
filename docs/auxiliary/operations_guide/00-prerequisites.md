@@ -25,7 +25,7 @@
 
 | Tool       | Minimum version | Notes                                  |
 | ---------- | --------------- | -------------------------------------- |
-| Terraform  | 1.7.0           | Pinned `~> 1.7` in `versions.tf`       |
+| Terraform  | 1.7.0           | Constrained to `>= 1.7.0, < 2.0.0` in `versions.tf` |
 | AWS CLI    | 2.x             | Required for bootstrap and deploy      |
 | Docker     | 24+             | Compose v2 plugin                      |
 | Java JDK   | 21              | Temurin recommended                    |
