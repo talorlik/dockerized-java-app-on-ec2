@@ -70,7 +70,7 @@ Proposed diff (apply only after approval):
 +++ b/.github/workflows/infra-plan.yml
 @@ -18,6 +18,7 @@ jobs:
        - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
- 
+
        - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
 +        if: ${{ env.ACT != 'true' }}
          with:
@@ -94,7 +94,7 @@ defect. Same fix:
 +++ b/.github/workflows/app-destroy.yml
 @@ -71,6 +71,7 @@ jobs:
            aws --version
- 
+
        - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
 +        if: ${{ env.ACT != 'true' }}
          with:
@@ -128,7 +128,7 @@ Onboarding is now a `cp` per file and a populate.
 
 ### Finding 4 (low): `infra-plan.yml` has no `Ensure AWS CLI present` step
 
-The other infra and app workflows each carry an `Ensure AWS CLI present` step that installs `aws` when the runner image lacks it (the slim `act` images do; full-22.04 ships it). `infra-plan.yml` omits this step.
+The other infra and app workflows each carry an `Ensure AWS CLI present` step that installs `aws` when the runner image lacks it (the slim `act` images do; full-24.04 ships it). `infra-plan.yml` omits this step.
 
 Functional impact: zero. `terraform plan` and the Terraform S3 backend talk to AWS through the Terraform AWS provider's embedded SDK; no shell-out to `aws` happens in the plan path. The S3 backend init (line 33) and the ACM cross-account assume (passed via `TF_VAR_*`) both flow through the provider, not the CLI.
 
@@ -158,8 +158,8 @@ act -W .github/workflows/infra-plan.yml workflow_dispatch
 `ci.yml:100-158` runs `docker compose` and Playwright. Under `act`:
 
 - The `--container-options=--group-add=0` line in `.actrc:39` adds the host's root group to the runner container so the bind-mounted `/var/run/docker.sock` is reachable. Required.
-- The runner image pin `catthehacker/ubuntu:full-22.04` (`.actrc:19`) ships a docker CLI new enough to negotiate API >= 1.40 against OrbStack / Docker Engine 24+. Required.
-- Playwright's `npx playwright install --with-deps chromium` calls `apt-get` via sudo. The full-22.04 image has both. Works.
+- The runner image pin `catthehacker/ubuntu:full-24.04` (`.actrc:19`) ships a docker CLI new enough to negotiate API >= 1.40 against OrbStack / Docker Engine 24+. Required.
+- Playwright's `npx playwright install --with-deps chromium` calls `apt-get` via sudo. The full-24.04 image has both. Works.
 - Both `actions/upload-artifact` invocations (surefire + Playwright) are gated `!env.ACT && always()`. Correct.
 
 No change needed. Document the dependency chain (image, group-add, ryuk-disabled) in any onboarding readme that gets added later.
@@ -183,7 +183,7 @@ Post steps both ran in the act log (visible as
 made it into `$HOME/.docker/config.json` in a way the subsequent
 `docker push` could consume.
 
-Diagnostic ruled out (catthehacker/ubuntu:full-22.04 inspected directly):
+Diagnostic ruled out (catthehacker/ubuntu:full-24.04 inspected directly):
 
 - No `credsStore` or `credHelpers` in the baked
   `/home/runner/.docker/config.json`. Login writes plain base64 `auths`

@@ -59,7 +59,7 @@ jobs:
         # documented act-only short-circuit to Surefire-only existed to dodge
         # the slim catthehacker image's stale docker CLI (API floor 1.32 vs
         # the daemon's 1.40 minimum). `.actrc` now pins
-        # catthehacker/ubuntu:full-22.04, which ships a current docker CLI,
+        # catthehacker/ubuntu:full-24.04, which ships a current docker CLI,
         # so the workaround is no longer required.
         #
         # Under act the JVM runs inside the runner container while every
