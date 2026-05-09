@@ -13,3 +13,11 @@ app:
     enabled: false
   jwt:
     expiration-minutes: 60
+    # Hermetic tests: never reach Secrets Manager. The placeholder below is
+    # only used at bean-construction time; @SpringBootTest classes that need
+    # a real key can override via @SpringBootTest(properties = ...).
+    secret-source: inline
+    inline-key: test-only-not-a-real-key-32bytes-min-aaaa
+    inline-issuer: java-app-test
+  admin:
+    seed-enabled: false

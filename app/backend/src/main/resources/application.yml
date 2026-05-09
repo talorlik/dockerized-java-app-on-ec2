@@ -60,6 +60,17 @@ app:
     admin-secret-name: ${ADMIN_SECRET_NAME:/java-app/prod/admin}
   jwt:
     expiration-minutes: 60
+    # Source of the JWT signing key. "secrets-manager" (default) reads from
+    # AWS Secrets Manager. "inline" reads from app.jwt.inline-key and is
+    # intended for local dev / hermetic CI. Wiring is via @ConditionalOnProperty
+    # on the JwtSecretProvider implementations.
+    secret-source: ${JWT_SECRET_SOURCE:secrets-manager}
+    inline-key: ${JWT_INLINE_KEY:}
+    inline-issuer: ${JWT_INLINE_ISSUER:java-app}
+  admin:
+    # When false, AdminSeeder is a no-op. Keeps local/CI from calling
+    # Secrets Manager for the admin password.
+    seed-enabled: ${ADMIN_SEED_ENABLED:true}
   verification:
     code-length: 6
     ttl-minutes: 30

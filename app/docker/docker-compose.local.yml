@@ -34,12 +34,20 @@ services:
       DB_NAME: javaapp
       DB_USERNAME: appuser
       DB_PASSWORD: localdevpass
-      AWS_REGION: us-east-1
       SES_ENABLED: "false"
       JWT_SECRET_NAME: disabled-local
       SES_SECRET_NAME: disabled-local
       ADMIN_SECRET_NAME: disabled-local
       APP_PUBLIC_URL: http://localhost:8080
+      # AWS_REGION is still consumed by the SES/SecretsManager client builders
+      # in AwsConfig even though, under the local profile, neither client
+      # actually performs a network call. Keep a default so the bean wires.
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      # Local profile uses InlineJwtSecretProvider. Override JWT_INLINE_KEY at
+      # the host shell to pin the signing key across runs; otherwise the
+      # placeholder in application-local.yml is used.
+      JWT_INLINE_KEY: ${JWT_INLINE_KEY:-dev-only-not-a-real-key-32bytes-minimum-xx}
+      SPRING_PROFILES_ACTIVE: local
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
       interval: 10s

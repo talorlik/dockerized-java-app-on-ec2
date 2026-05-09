@@ -12,6 +12,7 @@ public class AppProperties {
     private final RateLimit rateLimit = new RateLimit();
     private final Cors cors = new Cors();
     private final Ses ses = new Ses();
+    private final Admin admin = new Admin();
 
     public Aws getAws() { return aws; }
     public Secrets getSecrets() { return secrets; }
@@ -20,6 +21,7 @@ public class AppProperties {
     public RateLimit getRateLimit() { return rateLimit; }
     public Cors getCors() { return cors; }
     public Ses getSes() { return ses; }
+    public Admin getAdmin() { return admin; }
 
     public static class Aws { private String region = "us-east-1";
         public String getRegion() { return region; } public void setRegion(String r) { this.region = r; } }
@@ -38,8 +40,29 @@ public class AppProperties {
 
     public static class Jwt {
         private long expirationMinutes = 60;
+        // "secrets-manager" (default, prod) or "inline" (local/dev/CI smoke).
+        // Selected by Spring's @ConditionalOnProperty on the matching
+        // JwtSecretProvider implementation.
+        private String secretSource = "secrets-manager";
+        // Used only when secretSource = "inline". Must be >= 32 bytes for HS256.
+        private String inlineKey;
+        private String inlineIssuer = "java-app";
         public long getExpirationMinutes() { return expirationMinutes; }
         public void setExpirationMinutes(long v) { this.expirationMinutes = v; }
+        public String getSecretSource() { return secretSource; }
+        public void setSecretSource(String v) { this.secretSource = v; }
+        public String getInlineKey() { return inlineKey; }
+        public void setInlineKey(String v) { this.inlineKey = v; }
+        public String getInlineIssuer() { return inlineIssuer; }
+        public void setInlineIssuer(String v) { this.inlineIssuer = v; }
+    }
+
+    public static class Admin {
+        // When false, AdminSeeder is a no-op. Used to keep local/CI boots
+        // hermetic - i.e., no Secrets Manager call for the admin password.
+        private boolean seedEnabled = true;
+        public boolean isSeedEnabled() { return seedEnabled; }
+        public void setSeedEnabled(boolean v) { this.seedEnabled = v; }
     }
 
     public static class Verification {

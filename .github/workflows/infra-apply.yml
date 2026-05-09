@@ -25,6 +25,12 @@ jobs:
   apply:
     runs-on: ubuntu-latest
     environment: prod
+    # AWS CLI v2 pipes JSON through `less` by default. Act's medium image has
+    # no `less`, causing aws shell-outs to exit 253. Disable pager job-wide so
+    # every step (SLR creation, SSM put-parameter, S3 ops, terraform outputs)
+    # gets the same defaulting on real GitHub runners and under act.
+    env:
+      AWS_PAGER: ""
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -121,9 +127,6 @@ jobs:
       - name: Upload compose file to S3 (compose-object pointer)
         env:
           AWS_REGION: ${{ vars.AWS_REGION }}
-          # AWS CLI v2 pipes JSON through `less` by default. Act's medium
-          # image has no `less`, causing exit 253. Empty value disables pager.
-          AWS_PAGER: ""
         run: |
           set -euo pipefail
           BUCKET="java-app-prod-config-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"

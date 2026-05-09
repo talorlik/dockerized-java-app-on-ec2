@@ -1,0 +1,19 @@
+# Local / CI-smoke profile. Activated by SPRING_PROFILES_ACTIVE=local
+# (set in app/docker/docker-compose.local.yml).
+#
+# Goal: boot the backend without any AWS call. Combined with the existing
+# disabled SES path, this profile makes the local stack hermetic.
+#
+# Inline JWT key default below is a placeholder; override JWT_INLINE_KEY at
+# runtime if you need a stable value across runs. The InlineJwtSecretProvider
+# enforces a 32-byte minimum at construction.
+
+app:
+  jwt:
+    secret-source: inline
+    inline-key: ${JWT_INLINE_KEY:dev-only-not-a-real-key-32bytes-minimum-xx}
+    inline-issuer: java-app-local
+  admin:
+    seed-enabled: false
+  ses:
+    enabled: false

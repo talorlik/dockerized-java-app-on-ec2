@@ -51,6 +51,11 @@ public class AdminSeeder {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void seed() {
+        if (!props.getAdmin().isSeedEnabled()) {
+            // Hermetic local/CI: no Secrets Manager call, no admin row.
+            log.info("AdminSeeder disabled by config (app.admin.seed-enabled=false)");
+            return;
+        }
         try {
             var resp = sm.getSecretValue(GetSecretValueRequest.builder()
                 .secretId(props.getSecrets().getAdminSecretName())

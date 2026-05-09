@@ -48,6 +48,12 @@
             (act) and on github-hosted ubuntu-latest equally.
         -->
         <docker-java.version>3.7.1</docker-java.version>
+        <!--
+            docker-java currently requires explicit API version pinning in our
+            environment. Keep this as the single project-level source of truth
+            for IT JVMs.
+        -->
+        <docker.api.version>1.45</docker.api.version>
     </properties>
 
     <dependencyManagement>
@@ -198,6 +204,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
+                    <systemPropertyVariables>
+                        <api.version>${docker.api.version}</api.version>
+                    </systemPropertyVariables>
                     <includes>
                         <include>**/integration/**/*IT.java</include>
                         <include>**/*IT.java</include>

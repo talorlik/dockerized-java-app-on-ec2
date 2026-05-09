@@ -17,7 +17,13 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      # Real GitHub runners only: assume DEPLOYMENT_ROLE_ARN via OIDC.
+      # Skipped under `act` (env.ACT==true), where static AWS credentials are
+      # already provided to the container via --env-file (.github/env.local).
+      # Skipping prevents this action from clobbering the env-loaded creds and
+      # from failing when no real OIDC token issuer is present.
       - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
+        if: ${{ env.ACT != 'true' }}
         with:
           role-to-assume: ${{ secrets.DEPLOYMENT_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -55,11 +61,11 @@ jobs:
           terraform plan -no-color -input=false -out=tfplan
           terraform show -no-color tfplan > plan.txt
 
-      # Skip under `act`: GitHub artifact storage is not reachable locally
-      # (returns HTTP 401). plan.txt is still rendered into the job summary
-      # below so a local act run still surfaces the plan in stdout.
-      - if: ${{ !env.ACT }}
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+      # Uploads to the GitHub-hosted artifact backend on real CI, and to the
+      # emulated artifact server enabled by `--artifact-server-path` in
+      # `.actrc` when running under act. plan.txt is also rendered into the
+      # job summary below for at-a-glance inspection.
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: terraform-plan
           path: |

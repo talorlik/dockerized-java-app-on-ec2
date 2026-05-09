@@ -1,15 +1,11 @@
 package com.talorlik.javaapp.security;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.talorlik.javaapp.config.AppProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
-import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
-import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -18,33 +14,34 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Builds and parses HMAC-signed JWTs. Signing key is fetched from Secrets
- * Manager at startup (single-shot read; not rotated mid-process).
+ * Builds and parses HMAC-signed JWTs. The signing key is obtained from a
+ * {@link JwtSecretProvider} at startup (single-shot read; not rotated
+ * mid-process). The provider implementation is selected by the
+ * {@code app.jwt.secret-source} property; in production this resolves to
+ * Secrets Manager, in local/CI smoke to an inline key.
  */
 @Component
 public class JwtService {
 
     private final AppProperties props;
-    private final SecretsManagerClient sm;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final JwtSecretProvider secretProvider;
     private SecretKey key;
     private String issuer;
 
-    public JwtService(AppProperties props, SecretsManagerClient sm) {
+    public JwtService(AppProperties props, JwtSecretProvider secretProvider) {
         this.props = props;
-        this.sm = sm;
+        this.secretProvider = secretProvider;
     }
 
     @PostConstruct
-    void init() throws Exception {
-        var resp = sm.getSecretValue(GetSecretValueRequest.builder()
-            .secretId(props.getSecrets().getJwtSecretName())
-            .build());
-        JsonNode json = mapper.readTree(resp.secretString());
-        String signingKey = json.get("signing_key").asText();
-        this.issuer = json.has("issuer") ? json.get("issuer").asText() : "java-app";
-        // jjwt requires >= 256-bit key for HS256
-        this.key = Keys.hmacShaKeyFor(signingKey.getBytes(StandardCharsets.UTF_8));
+    void init() {
+        JwtSecretProvider.JwtMaterial m = secretProvider.load();
+        this.issuer = (m.issuer() != null && !m.issuer().isBlank())
+            ? m.issuer()
+            : "java-app";
+        // jjwt requires >= 256-bit key for HS256. The inline provider enforces
+        // this at construction; the SM provider trusts the secret payload.
+        this.key = Keys.hmacShaKeyFor(m.signingKey().getBytes(StandardCharsets.UTF_8));
     }
 
     public String issueToken(String subject, List<String> roles) {

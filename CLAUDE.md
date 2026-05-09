@@ -24,7 +24,8 @@ an ALB.
 - Frontend: vanilla HTML/CSS/JS served by Nginx; Nginx proxies `/api/` to the
   backend container.
 - Runtime: EC2 Auto Scaling Group on private subnets, Docker Compose pulls
-  images from ECR, ALB on `8443` forwards to instance port `8080`.
+  images from ECR, ALB on `443` (with `80 -> 443` redirect) forwards to
+  instance port `8080` (frontend Nginx, published as `8080:80`).
 - Data: Amazon RDS MySQL in private DB subnets. EC2 must remain stateless.
 - IaC: Terraform with S3 remote state and native S3 locking
   (`use_lockfile = true`). DynamoDB locking is not used.
@@ -63,12 +64,12 @@ an ALB.
 |  |- auxiliary/adr/0001..0006-*.md   Architecture decision records
 |  `- auxiliary/planning/      Source-of-truth product/tech specs
 |- .github/workflows/
-|  |- ci.yml                   PR + workflow_call quality gate
-|  |- infra-plan.yml           PR plan for infra/**
-|  |- infra-apply.yml          Apply on main / dispatch
-|  |- infra-destroy.yml        Manual teardown
-|  |- app-deploy.yml           Build, push to ECR, ASG instance refresh
-|  `- app-destroy.yml
+|  |- ci.yml                   workflow_dispatch + workflow_call quality gate
+|  |- infra-plan.yml           workflow_dispatch terraform plan for infra/envs/prod
+|  |- infra-apply.yml          workflow_dispatch terraform apply (prod environment gate)
+|  |- infra-destroy.yml        workflow_dispatch teardown (typed `DESTROY` confirm)
+|  |- app-deploy.yml           workflow_dispatch build, push to ECR, ASG instance refresh
+|  `- app-destroy.yml          workflow_dispatch app-layer teardown (typed `DESTROY` confirm)
 |- .editorconfig, .gitattributes, .vscode/, LICENSE
 ```
 
@@ -85,7 +86,7 @@ Generated/vendored content the agent must not edit:
 |--------------|-----------------------------------------------------------------|
 | Language     | Java 21 (Temurin in CI), Node for Playwright only               |
 | Framework    | Spring Boot 3.5.0 parent (see pom.xml `parent.version`)         |
-| Build        | Maven (no wrapper present; use system `mvn`)                    |
+| Build        | Maven Wrapper `./mvnw` (committed at `app/backend/mvnw`, version pinned via `.mvn/wrapper/maven-wrapper.properties`); system `mvn` works locally |
 | DB           | MySQL 8.4 LTS (RDS in prod, Testcontainers in CI, container locally) |
 | Migrations   | Flyway, files at `app/backend/src/main/resources/db/migration/` |
 | Auth         | Spring Security + jjwt 0.12.6                                    |
@@ -108,15 +109,21 @@ Run from repo root unless noted. Paths are host paths.
 Backend:
 
 ```bash
+# Canonical CI path uses the wrapper. ci.yml chmods +x ./mvnw before invoke
+# to defend against archive imports / Windows clones with core.fileMode=false.
+cd app/backend && chmod +x ./mvnw
+
 # Compile + unit + integration tests (Failsafe, Testcontainers MySQL).
-cd app/backend && mvn -B -ntp verify
+cd app/backend && ./mvnw -B -ntp verify
 
 # Unit tests only.
-cd app/backend && mvn -B -ntp test
+cd app/backend && ./mvnw -B -ntp test
 
 # Package the jar without running tests (rare; CI always runs verify).
-cd app/backend && mvn -B -ntp -DskipTests package
+cd app/backend && ./mvnw -B -ntp -DskipTests package
 ```
+
+System `mvn` works locally as a fallback; CI always uses `./mvnw`.
 
 Frontend: vanilla JS, no build step. CI only verifies that
 `app/frontend/src/index.html` and `app/frontend/nginx.conf` exist.
@@ -185,8 +192,9 @@ binaries already installed on the user's Mac (see section 9).
 
 ## 6. Deployment model
 
-- Trigger: merge to `main` (or manual dispatch with explicit image tag) runs
-  `app-deploy.yml`, which `workflow_call`s `ci.yml` as a gate.
+- Trigger: `workflow_dispatch` only (optional `image_tag` input; defaults to
+  `sha-${GITHUB_SHA::12}`); calls `ci.yml` via `workflow_call` as a quality
+  gate. There is no `push:` or `pull_request:` trigger.
 - Build: backend and frontend Docker images, tagged `${GITHUB_SHA}`. Never use
   `latest` for runtime.
 - Push: ECR repos provisioned in `infra/envs/prod/ecr.tf`.
@@ -196,8 +204,8 @@ binaries already installed on the user's Mac (see section 9).
   - `/java-app/prod/release-id`
 - Rollout: ASG Instance Refresh with `min_healthy_percentage = 100`,
   `max_healthy_percentage = 200` (launch-before-terminate).
-- Post-deploy: smoke against `https://java.talorlik.com:8443/health` (or
-  `/actuator/health`).
+- Post-deploy: smoke against `https://java.talorlik.com/actuator/health`
+  (port 443 default; matches `app-deploy.yml:150`).
 - Rollback: re-run `app-deploy.yml` with the previous SHA as the dispatch
   input; do not delete ECR images.
 
@@ -209,15 +217,24 @@ Two accounts:
 - DOMAIN: Route53 hosted zone for `talorlik.com`. Terraform reaches it via a
   second `aws` provider alias that assumes a DNS-write role.
 
-Required GitHub repository variables (set in repo settings, not committed):
+Required GitHub repository configuration (set in repo settings, never
+committed). The split mirrors `.github/{vars,secrets}.local` for `act`
+parity; workflows reference these as `${{ vars.* }}` and `${{ secrets.* }}`.
+
+Variables (`vars.*` in workflows):
 
 ```
 AWS_REGION
 DEPLOYMENT_ACCOUNT_ID
-DEPLOYMENT_ROLE_ARN
 DOMAIN_ACCOUNT_ID
-DOMAIN_ROUTE53_ROLE_ARN
 HOSTED_ZONE_ID
+```
+
+Secrets (`secrets.*` in workflows):
+
+```
+DEPLOYMENT_ROLE_ARN
+DOMAIN_ROUTE53_ROLE_ARN
 ACM_CERTIFICATE_ARN
 ```
 
@@ -240,9 +257,12 @@ chained assume-role.
   ARN/path in Terraform. No secrets in user-data, in `tfvars`, or in
   `application.yml`.
 - Logs: never log password, JWT, verification code, or full request bodies.
-- Branch/PR hints (inferred from `ci.yml` triggers; unverified - check repo
-  rules): PRs run `ci.yml`; merging to `main` runs `infra-apply.yml` and
-  `app-deploy.yml`.
+- Triggers: every workflow uses `workflow_dispatch:` (manual dispatch only);
+  `ci.yml` additionally exposes `workflow_call:` so `app-deploy.yml` can use
+  it as a reusable quality gate. No workflow has a `push:` or
+  `pull_request:` trigger. The docs-drift script
+  `.github/scripts/docs_drift_check.sh` actively forbids legacy phrases like
+  "merge to main" and "PR plan for infra/**".
 
 ## 9. Host tooling MCP
 
@@ -315,23 +335,39 @@ Constraints:
 
 ## 12. Known gaps and unverifieds
 
-- Spring Boot version: `pom.xml` parent is `3.5.0`; PROJECT_OVERVIEW cites
-  `3.5.14` and `4.0.6` as upstream stable lines. (unverified - check docs.)
-- Ubuntu AMI choice for the Launch Template: `resolute`/`26.04` vs
-  `noble`/`24.04` LTS. PROJECT_OVERVIEW prefers latest LTS. (unverified -
-  check Canonical SSM `/aws/service/canonical` paths in the target region.)
-- Port mapping: ALB listener `8443` -> target `8080`. Frontend container in
-  `docker-compose.prod.yml` should publish host `8080:80` (Nginx 80 inside,
-  8080 on the host). Confirm in `app/docker/docker-compose.prod.yml` before
-  changing ALB target group ports.
-- Maven wrapper (`mvnw`) is not committed; CI uses system `mvn`. If a
-  reproducible toolchain is needed, add `mvnw` rather than pinning Maven in
-  CI alone. (unverified - `app/backend/mvnw` and `app/backend/mvnw.cmd`
-  appear to exist on disk; reconcile this note with the file tree.)
-- Post-upgrade follow-up tracked from ADR 0008: flip
-  `allow_major_version_upgrade` back to `false` at
-  `infra/envs/prod/rds.tf:68` after the MySQL 8.0 -> 8.4 apply has
-  landed and the smoke test passes. Optionally also remove
-  `apply_immediately = true` (`rds.tf:73`) for a production-safe
-  default. Pre-flight check before the upgrade itself: runbook
-  `docs/auxiliary/operations_guide/runbooks/2026-05-08_appuser_auth_plugin_conversion.md`.
+- Spring Boot version: `app/backend/pom.xml:11` is on `3.5.0`. Current 3.5.x
+  patch line is `3.5.13` (March 2026) and `3.5` is the final 3.x minor; OSS
+  support ends 2026-06-30. Spring Boot 4.0 has been GA since November 2025
+  (`4.0.6`, April 2026) and is the upstream-recommended target for new work.
+  The `3.5.0` pin is intentional - do not bump without explicit instruction
+  (Section 10 hard rule). Two valid bump paths when approval comes:
+  (a) `3.5.0` -> `3.5.13` in-line patch on the same minor (lowest blast
+  radius); (b) `3.5.x` -> `4.0.x` migration onto Spring Framework 7.0
+  (larger change, requires audit of jjwt 0.12.6, AWS SDK v2 2.28.16,
+  Bucket4j 8.10.1, Spring Security upgrade notes).
+- Ubuntu AMI: `infra/envs/prod/variables.tf:114-121` defines
+  `var.ubuntu_lts_codename` with default `noble` (24.04 LTS).
+  `infra/envs/prod/asg.tf:10-11` resolves the AMI ID at apply time from
+  Canonical's SSM at
+  `/aws/service/canonical/ubuntu/server/${codename}/stable/current/amd64/hvm/ebs-gp3/ami-id`.
+  Switch via the variable (e.g. `resolute` for 26.04 LTS) once the new
+  codename is GA in the target region. (unverified - check Canonical's
+  release calendar for 26.04 LTS GA timing.)
+- Port mapping (verified 2026-05-09 against `infra/envs/prod/locals.tf:25-27`
+  and `app/docker/docker-compose.prod.yml`): ALB listener `443` (HTTPS) and
+  `80` (HTTP -> 443 redirect), target group port `8080`. Frontend container
+  publishes `8080:80` (Nginx port 80 inside the container, port 8080 on the
+  EC2 host). Backend container `expose`s 8080 internally only; Nginx proxies
+  `/api/` to the backend's 8080.
+- Post-upgrade follow-up tracked from ADR 0008. Current state (verified
+  2026-05-09 against `infra/envs/prod/rds.tf:68`):
+  `allow_major_version_upgrade = true`, `apply_immediately = true`
+  (`rds.tf:73`). Action when the MySQL 8.0 -> 8.4 apply has landed and
+  the post-upgrade smoke passes: flip `allow_major_version_upgrade` back
+  to `false` at `rds.tf:68`; optionally also remove
+  `apply_immediately = true` for a production-safe default. Pre-flight
+  before the upgrade itself: runbook
+  `docs/auxiliary/operations_guide/runbooks/2026-05-08_appuser_auth_plugin_conversion.md`
+  (RB-DB-001) - convert `appuser` from `mysql_native_password` to
+  `caching_sha2_password`, since 8.4 no longer auto-loads the legacy
+  plugin.

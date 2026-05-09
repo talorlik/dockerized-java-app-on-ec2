@@ -385,6 +385,39 @@ gh run watch</code></pre>
             <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/operations_guide/runbooks/2026-05-08_appuser_auth_plugin_conversion.md" target="_blank" rel="noopener noreferrer">Appuser Auth Plugin Conversion</a>.
           </p>
         </article>
+        <article class="card">
+          <h3>Local CI Loop (<code>act</code>)</h3>
+          <p>
+            Every workflow runs locally under
+            <a href="https://github.com/nektos/act" target="_blank" rel="noopener noreferrer">nektos/act</a>.
+            <code>.actrc</code> pins
+            <code>catthehacker/ubuntu:full-22.04</code> and loads
+            <code>.github/{env,secrets,vars}.local</code>; templates live next
+            to them as <code>*.example</code>. The
+            <code>aws-actions/configure-aws-credentials</code> OIDC step is
+            gated <code>if: env.ACT != 'true'</code> in every AWS-touching
+            workflow, and <code>app-deploy.yml</code> carries an
+            <code>act</code>-only ECR docker login fallback so
+            <code>docker push</code> picks up credentials reliably.
+          </p>
+          <pre><code># Quality gate.
+act -W .github/workflows/ci.yml workflow_dispatch
+
+# Single CI job (skip the heavier compose-smoke).
+act -W .github/workflows/ci.yml workflow_dispatch -j backend
+
+# Build/push deploy job (writes to real ECR + ASG; restrict scope).
+act -W .github/workflows/app-deploy.yml workflow_dispatch -j build-test
+
+# Terraform plan (read-only).
+act -W .github/workflows/infra-plan.yml workflow_dispatch</code></pre>
+          <p>
+            Full audit and rationale:
+            <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/operations_guide/2026-05-09_workflows_act_alignment_review.md" target="_blank" rel="noopener noreferrer">2026-05-09 Workflows / <code>act</code> Alignment Review</a>.
+            <code>terraform apply</code> and <code>terraform destroy</code>
+            paths are intentionally not exercised under <code>act</code>.
+          </p>
+        </article>
       </div>
     </section>
 

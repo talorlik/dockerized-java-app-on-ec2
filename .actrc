@@ -35,3 +35,26 @@
 --env-file .github/env.local
 --secret-file .github/secrets.local
 --var-file .github/vars.local
+
+# Container options applied to the runner container itself.
+#   --group-add=0
+#       Adds the root group so the bind-mounted /var/run/docker.sock is
+#       readable from inside the runner. Required for docker-cli, compose,
+#       and Testcontainers calls that touch the daemon.
+#
+# Limitation: act's `--container-options` is a single-string flag, and
+# `.actrc` lines are split on whitespace before parsing. That means you
+# cannot pack multiple docker options into this one line, and adding
+# additional `--container-options=` lines does not stack (last one wins).
+# Pass extra docker options via a shell-quoted CLI invocation when needed,
+# e.g. on a plain Linux Docker Engine daemon (no Docker Desktop / OrbStack)
+# where `host.docker.internal` is not auto-provided:
+#
+#     act --container-options "--group-add=0 \
+#         --add-host=host.docker.internal:host-gateway" -W ...
+#
+# On macOS with Docker Desktop or OrbStack the alias is injected into every
+# container's /etc/hosts natively, so the bare `--group-add=0` below is
+# enough for ci.yml's BACKEND_HOST and TESTCONTAINERS_HOST_OVERRIDE to
+# resolve.
+--container-options=--group-add=0

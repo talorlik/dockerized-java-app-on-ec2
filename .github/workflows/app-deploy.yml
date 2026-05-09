@@ -47,7 +47,13 @@ jobs:
           sudo "$tmp/aws/install" --update
           aws --version
 
+      # Real GitHub runners only: assume DEPLOYMENT_ROLE_ARN via OIDC.
+      # Skipped under `act` (env.ACT==true), where static AWS credentials are
+      # already provided to the container via --env-file (.github/env.local).
+      # Skipping prevents this action from clobbering the env-loaded creds and
+      # from failing when no real OIDC token issuer is present.
       - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
+        if: ${{ env.ACT != 'true' }}
         with:
           role-to-assume: ${{ secrets.DEPLOYMENT_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -59,8 +65,32 @@ jobs:
           if [ -z "$TAG" ]; then TAG="sha-${GITHUB_SHA::12}"; fi
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
+      # Real GitHub runners only. The action's JS path performs
+      # GetAuthorizationToken + `docker login` and registers a Post step that
+      # logs out at job end. Under `act`, switch to a shell login below to
+      # avoid the action's HOME/credential-helper edge cases inside the
+      # catthehacker runner image.
       - uses: aws-actions/amazon-ecr-login@19d944daaa35f0fa1d3f7f8af1d3f2e5de25c5b7 # v2.1.4
+        if: ${{ env.ACT != 'true' }}
         id: ecr
+        with:
+          registries: ${{ vars.DEPLOYMENT_ACCOUNT_ID }}
+
+      # `act`-only fallback. Uses the AWS CLI installed by the previous step
+      # and the static creds loaded from .github/env.local. Writes plain
+      # base64 `auths` entries into $HOME/.docker/config.json, which is what
+      # docker push in subsequent steps reads. No Post-step logout under act
+      # by design - the runner container is ephemeral.
+      - name: ECR docker login (act fallback)
+        if: ${{ env.ACT == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          aws ecr get-login-password --region "${{ vars.AWS_REGION }}" \
+            | docker login \
+                --username AWS \
+                --password-stdin \
+                "${{ vars.DEPLOYMENT_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com"
 
       - name: Resolve ECR repo URLs
         id: repos
@@ -109,7 +139,7 @@ jobs:
         run: |
           REFRESH_ID=$(aws autoscaling start-instance-refresh \
             --auto-scaling-group-name "${{ steps.asg.outputs.name }}" \
-            --preferences '{"MinHealthyPercentage":100,"MaxHealthyPercentage":200,"InstanceWarmup":180,"AutoRollback":true}' \
+            --preferences '{"MinHealthyPercentage":100,"MaxHealthyPercentage":200,"InstanceWarmup":180,"AutoRollback":false}' \
             --query 'InstanceRefreshId' --output text)
           echo "id=$REFRESH_ID" >> $GITHUB_OUTPUT
 

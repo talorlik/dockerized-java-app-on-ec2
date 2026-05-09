@@ -65,7 +65,7 @@ module "rds" {
   # Required when bumping the major engine version on an existing instance.
   # Flip back to false in a follow-up change once the 8.0 -> 8.4 upgrade
   # has landed in prod. Tracked in ADR 0008.
-  allow_major_version_upgrade = true
+  allow_major_version_upgrade = false
 
   # Apply the version bump and parameter-group swap on the next maintenance
   # event AWS schedules immediately, rather than waiting for the configured

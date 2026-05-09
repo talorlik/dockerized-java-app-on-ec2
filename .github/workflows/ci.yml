@@ -55,31 +55,45 @@ jobs:
         # +x bit (Windows clones with core.fileMode=false, archive downloads,
         # certain fs imports), the wrapper still runs. No-op when already +x.
         #
-        # `act` exports ACT=true automatically. Under act we run Surefire only
-        # (`test`) and skip Failsafe/Testcontainers ITs because the slim
-        # catthehacker runner image's docker CLI ships an old default API
-        # version that OrbStack/modern Docker Engine reject ("client version
-        # 1.32 is too old. Minimum supported API version is 1.40"), and
-        # neither setting DOCKER_API_VERSION nor pinning docker-java 3.7.1
-        # via the BOM was enough to make the docker-java client send a
-        # modern Api-Version on this code path. ITs still run unmodified on
-        # github-hosted ubuntu-latest, where the daemon is fresh enough.
-        # Remove the conditional once a known-good combination of testcontainers
-        # / docker-java / act runner image is verified end-to-end locally.
+        # Failsafe + Testcontainers ITs run unconditionally. The previously
+        # documented act-only short-circuit to Surefire-only existed to dodge
+        # the slim catthehacker image's stale docker CLI (API floor 1.32 vs
+        # the daemon's 1.40 minimum). `.actrc` now pins
+        # catthehacker/ubuntu:full-22.04, which ships a current docker CLI,
+        # so the workaround is no longer required.
+        #
+        # Under act the JVM runs inside the runner container while every
+        # Testcontainers-spawned container (MySQL here) is a sibling on the
+        # host docker daemon (socket is bind-mounted, not nested). Mapped
+        # ports publish to the daemon host's loopback, not to the runner
+        # container's loopback, so testcontainers' default
+        # `getHost() = localhost` resolution would fail. Setting
+        # TESTCONTAINERS_HOST_OVERRIDE to `host.docker.internal` only when
+        # ACT is set forces mapped-port resolution at the daemon host. On
+        # github-hosted runners ACT is unset, the export is skipped, and
+        # testcontainers' default `getHost()` is used. The
+        # `host.docker.internal` alias is injected into every container's
+        # /etc/hosts natively by Docker Desktop and OrbStack on macOS;
+        # plain Linux Docker Engine daemons need a `--add-host` (see the
+        # `.actrc` header for the CLI invocation).
         run: |
           chmod +x ./mvnw
           if [ "${ACT:-}" = "true" ]; then
-            echo "Detected ACT=${ACT}; running Surefire only (skipping Failsafe ITs)."
-            ./mvnw -B -ntp test
-          else
-            ./mvnw -B -ntp verify
+            export TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal
           fi
+          ./mvnw -B -ntp verify
 
       - name: Upload surefire reports
-        # `act` cannot reach GitHub's artifact storage backend (HTTP 401 against
-        # /_apis/pipelines/...). Skip the upload locally; keep `always()` semantics
-        # on real CI so reports are captured even when tests fail.
-        if: ${{ !env.ACT && always() }}
+        # Uploads to the GitHub-hosted artifact backend on real CI.
+        # Skipped under act: `actions/upload-artifact@v6` negotiates with
+        # the GitHub Actions Results Service, which act's emulated
+        # `--artifact-server-path` does not yet implement for the v6
+        # receiver path; the upload returns 401 unauthorized and fails
+        # the job. Locally, surefire/failsafe XML is still on disk under
+        # app/backend/target/{surefire,failsafe}-reports/ via the bind
+        # mount. `always()` keeps reports captured on real CI even when
+        # the test step exits non-zero.
+        if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: backend-test-reports
@@ -104,6 +118,34 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      # Resolves the host that subsequent steps use to reach the compose
+      # stack and the backend.
+      #
+      # `docker compose up` from inside the act runner targets the host's
+      # docker daemon (socket is bind-mounted). Compose containers publish
+      # their ports to the daemon host's loopback, which is reachable from
+      # the runner container as `host.docker.internal` - an alias injected
+      # natively by Docker Desktop and OrbStack on macOS, and addable via
+      # `--add-host` on plain Linux daemons (see `.actrc` header). On
+      # github-hosted runners the runner IS the host, so plain `localhost`
+      # works; ACT is unset there and the else branch is selected.
+      #
+      # Job/workflow-level `env:` blocks cannot reference the `env`
+      # context (would be self-referential and is rejected by the
+      # GitHub Actions / act schema validator). Resolving the values in
+      # a shell step that writes to `$GITHUB_ENV` is the canonical
+      # workaround and exposes BACKEND_HOST + E2E_BASE_URL to every
+      # subsequent step in the job without any expression voodoo.
+      - name: Resolve runtime backend host
+        run: |
+          if [ "${ACT:-}" = "true" ]; then
+            echo "BACKEND_HOST=host.docker.internal"            >> "$GITHUB_ENV"
+            echo "E2E_BASE_URL=http://host.docker.internal:8080" >> "$GITHUB_ENV"
+          else
+            echo "BACKEND_HOST=localhost"                        >> "$GITHUB_ENV"
+            echo "E2E_BASE_URL=http://localhost:8080"            >> "$GITHUB_ENV"
+          fi
+
       - name: Build images and start compose stack
         working-directory: app/docker
         run: |
@@ -114,7 +156,7 @@ jobs:
       - name: Wait for backend health
         run: |
           for i in $(seq 1 60); do
-            if curl -fsS http://localhost:8080/actuator/health; then
+            if curl -fsS "http://${BACKEND_HOST}:8080/actuator/health"; then
               echo
               echo "backend ready"
               exit 0
@@ -132,8 +174,9 @@ jobs:
 
       - name: Install + run Playwright
         working-directory: tests/e2e
-        env:
-          E2E_BASE_URL: http://localhost:8080
+        # E2E_BASE_URL is exported via `$GITHUB_ENV` in the
+        # "Resolve runtime backend host" step; Playwright's config picks
+        # it up from the process env, so no per-step env block is needed.
         run: |
           npm install
           npx playwright install --with-deps chromium
@@ -150,8 +193,13 @@ jobs:
         run: docker compose -f docker-compose.local.yml down -v
 
       - name: Upload Playwright report
-        # Same reason as the surefire upload above: skip under `act`.
-        if: ${{ !env.ACT && always() }}
+        # Uploads to the GitHub-hosted artifact backend on real CI.
+        # Skipped under act: same v6 receiver incompatibility as the
+        # backend surefire upload above. Locally, the HTML report is on
+        # disk at tests/e2e/playwright-report/ via the bind mount.
+        # `always()` keeps it captured on real CI even when test steps
+        # exit non-zero.
+        if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: playwright-report
