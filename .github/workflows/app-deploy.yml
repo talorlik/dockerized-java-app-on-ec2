@@ -122,6 +122,26 @@ jobs:
           aws ssm put-parameter --name "/java-app/prod/frontend-image-tag" --type SecureString --key-id "$KMS_ALIAS" --overwrite --value "${{ steps.tag.outputs.tag }}"
           aws ssm put-parameter --name "/java-app/prod/release-id"         --type SecureString --key-id "$KMS_ALIAS" --overwrite --value "${{ github.sha }}"
 
+      # ------------------------------------------------------------------
+      # Publish docker-compose.prod.yml to the config bucket.
+      #
+      # `app-destroy` deletes this object as part of tearing down the app
+      # layer, so a deploy must always re-publish it before instances boot.
+      # SSE-KMS uses the existing app-secrets CMK so the bucket policy
+      # (kms-only PutObject) accepts the upload.
+      # The step is idempotent: a no-op when the bucket already holds an
+      # identical object (S3 still records a new version because the bucket
+      # is versioned, but the cost is trivial and it removes the destroy/
+      # deploy ordering hazard).
+      # ------------------------------------------------------------------
+      - name: Publish docker-compose.prod.yml to S3
+        run: |
+          BUCKET="java-app-prod-config-${{ vars.DEPLOYMENT_ACCOUNT_ID }}"
+          aws s3 cp app/docker/docker-compose.prod.yml \
+            "s3://$BUCKET/docker-compose.prod.yml" \
+            --sse aws:kms \
+            --sse-kms-key-id alias/java-app-prod-secrets
+
       - name: Resolve ASG name
         id: asg
         run: |
@@ -134,16 +154,69 @@ jobs:
           fi
           echo "name=$NAME" >> $GITHUB_OUTPUT
 
+      # ------------------------------------------------------------------
+      # Re-arm ASG capacity if `app-destroy` (or any operator) scaled it
+      # to 0/0/0. Without this step a deploy after a destroy is a silent
+      # no-op: instance-refresh on an empty ASG returns Successful with
+      # InstancesToUpdate=0 and the post-deploy smoke 503s against an
+      # empty target group.
+      #
+      # Capacity targets are read from SSM parameters owned by Terraform
+      # (var.asg_min_size / var.asg_desired_capacity / var.asg_max_size,
+      # surfaced as /java-app/prod/asg/{min-size,desired-capacity,max-size}).
+      # Hardcoded fallbacks to 2/2/6 cover the cold-start case before the
+      # first apply that introduced these parameters.
+      #
+      # Output `scaled_from_zero` is consumed by the refresh steps below:
+      # when true, fresh instances launched by the scale-up are already on
+      # the latest LT and an instance refresh would needlessly cycle them.
+      # ------------------------------------------------------------------
+      - name: Re-arm ASG capacity if at zero
+        id: rearm
+        run: |
+          set -euo pipefail
+          NAME="${{ steps.asg.outputs.name }}"
+
+          # Read canonical capacity from SSM (terraform-managed). Each lookup
+          # falls back to its hardcoded default if the parameter isn't there
+          # yet (first deploy after this change, before terraform apply).
+          ssm_get() {
+            aws ssm get-parameter --name "$1" --query 'Parameter.Value' --output text 2>/dev/null || echo ""
+          }
+          MIN=$(ssm_get /java-app/prod/asg/min-size);         MIN="${MIN:-2}"
+          DES=$(ssm_get /java-app/prod/asg/desired-capacity); DES="${DES:-2}"
+          MAX=$(ssm_get /java-app/prod/asg/max-size);         MAX="${MAX:-6}"
+          echo "target capacity (from SSM/defaults): min=$MIN desired=$DES max=$MAX"
+
+          read -r CUR_MIN CUR_DES CUR_MAX <<< "$(aws autoscaling describe-auto-scaling-groups \
+            --auto-scaling-group-names "$NAME" \
+            --query 'AutoScalingGroups[0].[MinSize,DesiredCapacity,MaxSize]' \
+            --output text)"
+          echo "current min=$CUR_MIN desired=$CUR_DES max=$CUR_MAX"
+          if [ "$CUR_MIN" = "0" ] && [ "$CUR_DES" = "0" ] && [ "$CUR_MAX" = "0" ]; then
+            echo "ASG is at 0/0/0; scaling to $MIN/$DES/$MAX"
+            aws autoscaling update-auto-scaling-group \
+              --auto-scaling-group-name "$NAME" \
+              --min-size "$MIN" --desired-capacity "$DES" --max-size "$MAX"
+            echo "scaled_from_zero=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "scaled_from_zero=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Skipped when we just scaled from 0: the new instances launched by
+      # the scale-up are already on the current launch template version.
       - name: Trigger ASG instance refresh
         id: refresh
+        if: steps.rearm.outputs.scaled_from_zero != 'true'
         run: |
           REFRESH_ID=$(aws autoscaling start-instance-refresh \
             --auto-scaling-group-name "${{ steps.asg.outputs.name }}" \
-            --preferences '{"MinHealthyPercentage":100,"MaxHealthyPercentage":200,"InstanceWarmup":180,"AutoRollback":false}' \
+            --preferences '{"MinHealthyPercentage":100,"MaxHealthyPercentage":200,"InstanceWarmup":300,"AutoRollback":false}' \
             --query 'InstanceRefreshId' --output text)
           echo "id=$REFRESH_ID" >> $GITHUB_OUTPUT
 
       - name: Wait for refresh to complete
+        if: steps.rearm.outputs.scaled_from_zero != 'true'
         run: |
           set -e
           for i in $(seq 1 90); do
@@ -166,9 +239,49 @@ jobs:
           echo "timed out waiting for refresh"
           exit 1
 
+      # ------------------------------------------------------------------
+      # Gate the smoke on actual ALB target health, not on instance-refresh
+      # status. This prevents the 503 race from re-occurring: refresh can
+      # report Successful before targets stabilise, and (worse) refresh on
+      # an empty ASG returns Successful instantly.
+      # 60 * 15s = 900s ceiling: covers cold-boot user-data (4-7 min) +
+      # ELB unhealthy threshold (3 * 15s = 45s) + slack.
+      # ------------------------------------------------------------------
+      - name: Resolve target group ARN
+        id: tg
+        run: |
+          NAME="${{ steps.asg.outputs.name }}"
+          TG_ARN=$(aws autoscaling describe-auto-scaling-groups \
+            --auto-scaling-group-names "$NAME" \
+            --query 'AutoScalingGroups[0].TargetGroupARNs[0]' --output text)
+          echo "arn=$TG_ARN" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for target group healthy
+        run: |
+          set -e
+          for i in $(seq 1 60); do
+            HEALTHY=$(aws elbv2 describe-target-health \
+              --target-group-arn "${{ steps.tg.outputs.arn }}" \
+              --query "length(TargetHealthDescriptions[?TargetHealth.State=='healthy'])" \
+              --output text)
+            TOTAL=$(aws elbv2 describe-target-health \
+              --target-group-arn "${{ steps.tg.outputs.arn }}" \
+              --query "length(TargetHealthDescriptions[*])" \
+              --output text)
+            echo "TG healthy=$HEALTHY total=$TOTAL"
+            if [ "$HEALTHY" -ge 1 ]; then exit 0; fi
+            sleep 15
+          done
+          echo "no healthy targets in target group after 900s"
+          exit 1
+
       - name: Post-deploy smoke
         run: |
-          for i in $(seq 1 30); do
+          # 72 * 10s = 720s. TG-health gate above already proves at least
+          # one target is healthy; this loop additionally confirms the
+          # public ALB FQDN serves a 200 with status=UP, covering DNS
+          # propagation and listener-rule configuration.
+          for i in $(seq 1 72); do
             if curl -fsS --max-time 10 "https://java.talorlik.com/actuator/health" | grep -q '"status":"UP"'; then
               echo "smoke ok"; exit 0
             fi

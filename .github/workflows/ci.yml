@@ -235,3 +235,7 @@ jobs:
           directory: infra
           framework: terraform
           soft_fail: true
+          # Pull the vendored aws modules (vpc, alb, rds, autoscaling, ...)
+          # so checkov can scan their resources too. Without this it logs
+          # "Failed to download module ..." and silently skips them.
+          download_external_modules: "true"

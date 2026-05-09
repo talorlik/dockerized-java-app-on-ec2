@@ -238,3 +238,35 @@ resource "aws_ssm_parameter" "release_id" {
     ignore_changes = [value]
   }
 }
+
+# ----------------------------------------------------------------------------
+# ASG capacity, exposed as SSM parameters so app-deploy can re-arm capacity
+# after `app-destroy` scales it to 0/0/0 without duplicating the desired
+# values into GitHub repo vars. Terraform stays the single source of truth:
+# bumping `var.asg_*` and re-applying immediately changes what the next
+# deploy will scale back to.
+#
+# Plain `String` (not SecureString): these are non-sensitive operational
+# config; KMS overhead and the resulting kms:Decrypt grant on the deploy
+# role would be noise.
+# ----------------------------------------------------------------------------
+resource "aws_ssm_parameter" "asg_min_size" {
+  name        = local.ssm_keys.asg_min_size
+  description = "Canonical ASG MinSize. app-deploy reads this to re-arm capacity after a destroy."
+  type        = "String"
+  value       = tostring(var.asg_min_size)
+}
+
+resource "aws_ssm_parameter" "asg_desired_capacity" {
+  name        = local.ssm_keys.asg_desired_capacity
+  description = "Canonical ASG DesiredCapacity."
+  type        = "String"
+  value       = tostring(var.asg_desired_capacity)
+}
+
+resource "aws_ssm_parameter" "asg_max_size" {
+  name        = local.ssm_keys.asg_max_size
+  description = "Canonical ASG MaxSize."
+  type        = "String"
+  value       = tostring(var.asg_max_size)
+}

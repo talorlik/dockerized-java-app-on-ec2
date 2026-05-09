@@ -18,6 +18,15 @@
 #
 # Use `infra-destroy.yml` afterwards to remove the underlying infrastructure
 # itself.
+#
+# Two explicit gates are required to proceed:
+#   confirm                   = DESTROY
+#   acknowledge_runtime_break = I-ACKNOWLEDGE-RUNTIME-BREAK
+#
+# Local act invocation:
+#   act workflow_dispatch -W .github/workflows/app-destroy.yml \
+#     --input confirm=DESTROY \
+#     --input acknowledge_runtime_break=I-ACKNOWLEDGE-RUNTIME-BREAK
 ###############################################################################
 name: app-destroy
 
@@ -26,6 +35,19 @@ on:
     inputs:
       confirm:
         description: 'Type DESTROY (uppercase) to confirm'
+        required: true
+        default: ''
+      acknowledge_runtime_break:
+        # Second explicit gate. Scaling the ASG to 0/0/0, deleting the
+        # docker-compose.prod.yml S3 object, and purging ECR are all
+        # destructive in ways that *will* break the running app even if
+        # the underlying VPC/ALB/RDS stays up. The next app-deploy now
+        # self-heals (it re-arms the ASG and re-publishes the compose
+        # object), but a destroy still tears down live traffic between
+        # those two moments. Forcing a second typed acknowledgement
+        # makes single-click triggers (web UI, gh cli typo, automation
+        # accident) fail fast.
+        description: "Type 'I-ACKNOWLEDGE-RUNTIME-BREAK' to proceed"
         required: true
         default: ''
 
@@ -49,6 +71,10 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.confirm }}" != "DESTROY" ]; then
             echo "::error::confirm input must be exactly 'DESTROY'."
+            exit 1
+          fi
+          if [ "${{ github.event.inputs.acknowledge_runtime_break }}" != "I-ACKNOWLEDGE-RUNTIME-BREAK" ]; then
+            echo "::error::acknowledge_runtime_break input must be exactly 'I-ACKNOWLEDGE-RUNTIME-BREAK'."
             exit 1
           fi
 

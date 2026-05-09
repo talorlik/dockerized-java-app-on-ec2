@@ -13,13 +13,16 @@ locals {
 
   # SSM Parameter Store keys (TR-REL-005).
   ssm_keys = {
-    backend_image_tag  = "${local.secret_prefix}/backend-image-tag"
-    frontend_image_tag = "${local.secret_prefix}/frontend-image-tag"
-    release_id         = "${local.secret_prefix}/release-id"
-    compose_object     = "${local.secret_prefix}/compose-object"
-    db_endpoint        = "${local.secret_prefix}/db/endpoint"
-    db_name            = "${local.secret_prefix}/db/name"
-    log_group_app      = "${local.secret_prefix}/log-group/app"
+    backend_image_tag    = "${local.secret_prefix}/backend-image-tag"
+    frontend_image_tag   = "${local.secret_prefix}/frontend-image-tag"
+    release_id           = "${local.secret_prefix}/release-id"
+    compose_object       = "${local.secret_prefix}/compose-object"
+    db_endpoint          = "${local.secret_prefix}/db/endpoint"
+    db_name              = "${local.secret_prefix}/db/name"
+    log_group_app        = "${local.secret_prefix}/log-group/app"
+    asg_min_size         = "${local.secret_prefix}/asg/min-size"
+    asg_desired_capacity = "${local.secret_prefix}/asg/desired-capacity"
+    asg_max_size         = "${local.secret_prefix}/asg/max-size"
   }
 
   app_port       = 8080
