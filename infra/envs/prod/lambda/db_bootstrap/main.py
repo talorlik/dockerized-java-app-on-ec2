@@ -92,11 +92,20 @@ def handler(event, _context):
     user_lit = f"'{_escape_ident(app_user)}'@'%'"
     schema_lit = f"`{_escape_ident(db_name)}`"
 
+    # PyMySQL.cursor.execute() does Python `%`-formatting on the query when
+    # bind args are passed (cursors.py mogrify -> `query % args`). Any
+    # literal `%` in the SQL must therefore be doubled to `%%` for the
+    # parameterised path. user_lit contains the host wildcard `'%'`, so
+    # it would otherwise be parsed as a format spec and crash with
+    # "unsupported format character"). Queries WITHOUT bind args (GRANT
+    # below) skip mogrify entirely and use user_lit unchanged.
+    user_lit_param = user_lit.replace("%", "%%")
+
     try:
         with conn.cursor() as cur:
             LOG.info("CREATE USER IF NOT EXISTS %s", user_lit)
             cur.execute(
-                f"CREATE USER IF NOT EXISTS {user_lit} "
+                f"CREATE USER IF NOT EXISTS {user_lit_param} "
                 f"IDENTIFIED WITH caching_sha2_password BY %s",
                 (app_pw,),
             )
@@ -106,7 +115,7 @@ def handler(event, _context):
                 user_lit,
             )
             cur.execute(
-                f"ALTER USER {user_lit} "
+                f"ALTER USER {user_lit_param} "
                 f"IDENTIFIED WITH caching_sha2_password BY %s",
                 (app_pw,),
             )
