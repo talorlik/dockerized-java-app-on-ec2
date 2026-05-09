@@ -2,8 +2,11 @@
 # Secrets Manager + KMS for application runtime secrets.
 #
 # - Master DB password is created by RDS-managed master credentials in rds.tf.
-# - App-user DB password is created here (Terraform random_password) and must
-#   be created inside MySQL via Flyway migration after RDS is up.
+# - App-user DB password is generated here (Terraform random_password) and
+#   the matching MySQL account is provisioned by aws_lambda_function.db_bootstrap
+#   (see db_bootstrap.tf), which is invoked by terraform_data.db_bootstrap on
+#   RDS replacement or on app-user secret rotation. Re-running the Lambda is
+#   idempotent (CREATE USER IF NOT EXISTS + ALTER USER syncs the password).
 # - Admin bootstrap secret is generated and seeded by the backend's startup
 #   routine if not already present.
 # - JWT signing key is generated here.

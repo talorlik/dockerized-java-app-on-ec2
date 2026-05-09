@@ -18,14 +18,45 @@
   - `jq`.
   - `mysql` client v8 (Homebrew: `brew install mysql-client`).
 
+## When to use this runbook
+
+Primary path: `aws_lambda_function.db_bootstrap` (see
+`infra/envs/prod/db_bootstrap.tf`) provisions `appuser` automatically
+on every relevant `terraform apply` and on every app-user secret
+rotation, with `caching_sha2_password`. Use this runbook only when the
+Lambda is not the right tool:
+
+- Manual triage during a partial-apply incident, before
+  `terraform_data.db_bootstrap` has run.
+- Pre-flight audit when investigating an unrelated DB auth failure.
+- Disaster recovery from a snapshot that predates the Lambda.
+
+For a normal rotation, write the new secret value and either re-apply
+Terraform (the secret-version change triggers the Lambda) or invoke
+the function directly:
+
+```bash
+aws lambda invoke \
+  --profile <profile> --region us-east-1 \
+  --function-name java-app-prod-db-bootstrap \
+  --invocation-type RequestResponse \
+  --cli-binary-format raw-in-base64-out \
+  --payload '{}' \
+  /tmp/db_bootstrap_out.json
+cat /tmp/db_bootstrap_out.json
+```
+
 ## Decision tree
 
 1. Run the audit (step 4 below).
 2. Plugin column shows `caching_sha2_password` -> done. No change needed.
-3. Plugin column shows `mysql_native_password` -> proceed with steps 5-7.
-4. Empty result (no `appuser` row) -> stop. The user is not provisioned on
-   the live instance. Investigate before any engine upgrade. Do not
-   blindly create the user from this runbook.
+3. Plugin column shows `mysql_native_password` -> proceed with steps 5-7,
+   OR invoke the bootstrap Lambda above (it runs the same `ALTER USER`
+   idempotently and is the preferred path when the Lambda is available).
+4. Empty result (no `appuser` row) -> invoke the bootstrap Lambda. The
+   Lambda's `CREATE USER IF NOT EXISTS` will provision the account. If
+   the Lambda is unavailable for some reason, follow steps 5-7 manually
+   (the SQL is identical; the Lambda just automates it).
 
 ## Procedure
 

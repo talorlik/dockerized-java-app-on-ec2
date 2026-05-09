@@ -2,7 +2,12 @@
 # RDS MySQL 8.4 LTS (private, Multi-AZ, encrypted)
 #
 # - Master password managed by RDS in Secrets Manager (rotated by AWS).
-# - App user is created by Flyway with credentials from Secrets Manager.
+# - App user (`appuser`) is bootstrapped by aws_lambda_function.db_bootstrap
+#   (see db_bootstrap.tf). The Lambda is invoked by terraform_data.db_bootstrap
+#   on RDS replacement or app-user secret rotation, so the user survives
+#   `terraform destroy` + `terraform apply` cycles. Flyway then runs as
+#   appuser on backend startup to apply the schema migrations under
+#   app/backend/src/main/resources/db/migration/.
 # - Backups, deletion protection, performance insights, and slow-query logs
 #   are enabled per TR-DB-001..008.
 ###############################################################################

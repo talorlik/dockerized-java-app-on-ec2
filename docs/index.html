@@ -382,7 +382,19 @@ gh run watch</code></pre>
           <p>
             For MySQL 8.4 auth-plugin preflight and recovery details, use the
             runbook at
-            <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/operations_guide/runbooks/2026-05-08_appuser_auth_plugin_conversion.md" target="_blank" rel="noopener noreferrer">Appuser Auth Plugin Conversion</a>.
+            <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/operations_guide/runbooks/2026-05-08_appuser_auth_plugin_conversion.md" target="_blank" rel="noopener noreferrer">Appuser Auth Plugin Conversion</a>. Routine
+            <code>appuser</code> provisioning, password sync on rotation, and
+            auth-plugin alignment on engine upgrade are handled automatically
+            by <code>aws_lambda_function.db_bootstrap</code> (see
+            <code>infra/envs/prod/db_bootstrap.tf</code>); the runbook above
+            is the manual fall-back.
+          </p>
+          <p>
+            For ASG-flap diagnostics (instances launched + terminated in a
+            tight loop), use the runbook at
+            <a href="https://github.com/talorlik/dockerized-java-app-on-ec2/blob/main/docs/auxiliary/operations_guide/runbooks/2026-05-10_asg_flapping_investigation.md" target="_blank" rel="noopener noreferrer">ASG Flapping Investigation (RB-ASG-001)</a>.
+            Covers the S3-read IAM grant on the compose bucket and the DB
+            bootstrap Lambda dependency.
           </p>
         </article>
         <article class="card">

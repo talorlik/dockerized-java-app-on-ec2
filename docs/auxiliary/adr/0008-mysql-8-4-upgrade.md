@@ -93,25 +93,46 @@ necessary), and no drift appears on subsequent plans. The codebase
 does not use a custom option group, so no options need to be ported.
 
 ### Auth-plugin migration
-This repo does not provision the `appuser` MySQL user via Flyway or any
-other automated path. The `secrets.tf` line "App user is created by
-Flyway with credentials from Secrets Manager" is aspirational; no
-Flyway migration creates the user today. Consequence:
+The `appuser` MySQL account is now provisioned by
+`aws_lambda_function.db_bootstrap` (see
+`infra/envs/prod/db_bootstrap.tf`) and not by Flyway. The Lambda runs
+`CREATE USER IF NOT EXISTS ... IDENTIFIED WITH caching_sha2_password`
+followed by an idempotent `ALTER USER ... IDENTIFIED WITH
+caching_sha2_password` on every invocation, so the user is always
+provisioned with the 8.4-compatible plugin regardless of whether the
+account existed before. `terraform_data.db_bootstrap` invokes the
+Lambda on RDS replacement or on app-user secret rotation, so the
+auth-plugin alignment survives `terraform destroy` + `terraform apply`
+cycles. Consequences post-bootstrap:
 
-- If the operator created `appuser` on the live RDS instance using an
-  explicit `IDENTIFIED WITH mysql_native_password BY '<pw>'`, that user
-  will fail to authenticate after the engine upgrade. Convert manually
-  before applying:
-  ```sql
-  ALTER USER 'appuser'@'%' IDENTIFIED WITH caching_sha2_password BY '<pw>';
-  FLUSH PRIVILEGES;
-  ```
-  Use the same password that already lives in
-  `${local.secret_prefix}/db/app-user`. Retrieve it with
-  `aws secretsmanager get-secret-value --secret-id
-  ${local.secret_prefix}/db/app-user --query SecretString --output text`.
-- If `appuser` was created with the server default (`caching_sha2_password`),
-  no action is required.
+- A fresh apply against an empty 8.4 instance: Lambda creates `appuser`
+  with `caching_sha2_password`. No operator action.
+- A pre-existing `appuser` with `mysql_native_password`: the Lambda's
+  `ALTER USER ... IDENTIFIED WITH caching_sha2_password BY ?` flips the
+  plugin and (re)sets the password to the current secret value. No
+  operator action.
+- A pre-existing `appuser` already on `caching_sha2_password`: the
+  `ALTER USER` is a no-op for the plugin field and idempotently re-sets
+  the password to the current secret value (matches it on every run).
+  No operator action.
+
+The legacy manual conversion in runbook RB-DB-001
+(`docs/auxiliary/operations_guide/runbooks/2026-05-08_appuser_auth_plugin_conversion.md`)
+remains valid as a fall-back when the Lambda is not available (for
+example during a partial Terraform apply that created RDS but failed
+before `terraform_data.db_bootstrap` ran). Re-trigger the Lambda
+without a full apply via:
+
+```bash
+aws lambda invoke \
+  --profile <profile> --region us-east-1 \
+  --function-name java-app-prod-db-bootstrap \
+  --invocation-type RequestResponse \
+  --cli-binary-format raw-in-base64-out \
+  --payload '{}' \
+  /tmp/db_bootstrap_out.json
+cat /tmp/db_bootstrap_out.json
+```
 
 ### Hibernate dialect
 `org.hibernate.dialect.MySQL8Dialect` is deprecated in Hibernate 6.x

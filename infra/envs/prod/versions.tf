@@ -14,5 +14,11 @@ terraform {
       source  = "hashicorp/tls"
       version = "~> 4.0"
     }
+    # Used by db_bootstrap.tf to package the appuser-bootstrap Lambda zip
+    # at apply time without requiring an out-of-band build step.
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.6"
+    }
   }
 }

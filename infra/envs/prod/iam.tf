@@ -137,6 +137,27 @@ data "aws_iam_policy_document" "app_inline" {
     resources = ["*"]
   }
 
+  # S3 read of the published docker-compose object. The bucket is created
+  # out-of-band by .github/workflows/infra-apply.yml using the deterministic
+  # name "${var.project}-${var.environment}-config-${var.deployment_account_id}";
+  # user-data resolves the s3:// URI from SSM /java-app/prod/compose-object and
+  # runs `aws s3 cp` at boot. Without this grant the HEAD on the object returns
+  # 403, user-data fails, the ERR trap calls self_unhealthy with
+  # --no-should-respect-grace-period, and the ASG flaps every ~115s. The object
+  # is encrypted with aws_kms_key.app_secrets; KMS Decrypt is granted in the
+  # DecryptAppCmk statement above. See runbook RB-ASG-001
+  # (docs/auxiliary/operations_guide/runbooks/2026-05-10_asg_flapping_investigation.md).
+  statement {
+    sid    = "ReadComposeObject"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+    ]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:s3:::${var.project}-${var.environment}-config-${var.deployment_account_id}/docker-compose.prod.yml",
+    ]
+  }
+
   # Allow the user-data boot script to mark its own instance Unhealthy if
   # the actuator never returns UP within the boot deadline. Without this
   # the box would linger as a black hole behind the ALB until the grace

@@ -42,7 +42,11 @@
 ### Manual rotation - `db/app-user`
 
 Automatic rotation is intentionally out of scope (see ADR 0005, ADR 0007).
-To rotate the `appuser` password:
+The `appuser` MySQL account is provisioned and re-synced to the secret
+by `aws_lambda_function.db_bootstrap` (see
+`infra/envs/prod/db_bootstrap.tf`). A rotation is therefore "write the
+new secret value, then re-run the bootstrap" - no manual `ALTER USER`
+required. To rotate the `appuser` password:
 
 1. Generate a new password:
    ```bash
@@ -58,15 +62,29 @@ To rotate the `appuser` password:
      --secret-string "$(jq -n --arg u appuser --arg p "$NEW" \
         '{username:$u, password:$p}')"
    ```
-3. Apply it on the live MySQL instance, authenticated as `dbadmin` with
-   the master secret:
-   ```sql
-   ALTER USER 'appuser'@'%' IDENTIFIED WITH caching_sha2_password BY '<NEW>';
-   FLUSH PRIVILEGES;
-   ```
+3. Re-run the bootstrap Lambda. Two options, both idempotent:
+   - Run `terraform apply` from `infra/envs/prod`. The new secret
+     version flips
+     `aws_secretsmanager_secret_version.db_app_user.version_id`,
+     `terraform_data.db_bootstrap` re-fires, and the Lambda runs
+     `ALTER USER 'appuser'@'%' IDENTIFIED WITH caching_sha2_password BY
+     <new>` + `FLUSH PRIVILEGES`.
+   - Or invoke the Lambda directly without an apply:
+     ```bash
+     aws lambda invoke \
+       --profile <profile> --region us-east-1 \
+       --function-name java-app-prod-db-bootstrap \
+       --invocation-type RequestResponse \
+       --cli-binary-format raw-in-base64-out \
+       --payload '{}' \
+       /tmp/db_bootstrap_out.json
+     cat /tmp/db_bootstrap_out.json
+     ```
 4. Trigger an ASG instance refresh so EC2s re-read the secret on boot.
    Long-lived instances retain the previous credential in `/opt/java-app/.env`
-   until they recycle.
+   until they recycle. The DB still accepts the old credential briefly
+   because Hikari's pooled connections were authenticated before the
+   ALTER; new connections after the refresh use the new password.
 
 ## Compute hardening
 

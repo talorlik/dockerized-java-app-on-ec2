@@ -310,8 +310,16 @@ and rotate it by default every seven days. ([AWS Documentation][8])
 
 App user secret options:
 
-1. Terraform creates app DB user password in Secrets Manager.
-2. DB migration/init job creates the app user with least privilege.
+1. Terraform creates app DB user password in Secrets Manager
+   (`random_password` in `secrets.tf`).
+2. The MySQL `appuser` account itself is provisioned by
+   `aws_lambda_function.db_bootstrap` (see `infra/envs/prod/db_bootstrap.tf`),
+   invoked by `terraform_data.db_bootstrap` on RDS replacement or
+   app-user secret rotation. The Lambda runs idempotent
+   `CREATE USER IF NOT EXISTS` + `ALTER USER ... IDENTIFIED WITH
+   caching_sha2_password BY ?` + `GRANT ALL PRIVILEGES ON \`javaapp\`.*`,
+   so the same Lambda code creates the account on a fresh RDS, syncs the
+   password on rotation, and flips the auth plugin if it ever drifts.
 3. Backend connects as app user, not master user.
 
 ## Phase 6 - Central MySQL DB

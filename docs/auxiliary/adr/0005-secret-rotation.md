@@ -14,7 +14,7 @@ Per-secret approach:
 | Secret                       | Rotation                                                                       |
 | ---------------------------- | ------------------------------------------------------------------------------ |
 | `/java-app/prod/db/master`   | RDS-managed, AWS rotates default 7 days.                                       |
-| `/java-app/prod/db/app-user` | Manual: rotate with a Flyway migration that runs `ALTER USER ... IDENTIFIED BY` and updates the secret in the same change set. App reconnects on restart. |
+| `/java-app/prod/db/app-user` | Update the secret value (new password). The next `terraform apply` triggers `terraform_data.db_bootstrap` because `aws_secretsmanager_secret_version.db_app_user.version_id` changed; the bootstrap Lambda runs `ALTER USER 'appuser'@'%' IDENTIFIED WITH caching_sha2_password BY <new>` and the running pool reconnects on next restart. To rotate without a full apply, write the new secret value, then `aws lambda invoke --function-name java-app-prod-db-bootstrap ... /tmp/out.json`. |
 | `/java-app/prod/jwt`         | Rotate by writing a new value, then triggering an instance refresh. Existing tokens become invalid; clients re-login. |
 | `/java-app/prod/admin`       | Rotate by writing a new value; the running app already has the previous admin record (seed is idempotent and only inserts when absent). |
 | `/java-app/prod/ses`         | Rotate freely; backend re-reads at restart.                                    |
