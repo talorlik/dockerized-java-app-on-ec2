@@ -72,7 +72,7 @@ trap 'self_unhealthy "user-data trapped error on line $LINENO"' ERR
 # ---- base packages ----
 export DEBIAN_FRONTEND=noninteractive
 retry 5 10 apt-get update -y
-retry 5 10 apt-get install -y ca-certificates curl gnupg lsb-release jq unzip awscli
+retry 5 10 apt-get install -y ca-certificates curl gnupg lsb-release jq unzip
 
 # ---- Docker Engine + Compose plugin (official Docker apt repo) ----
 install -m 0755 -d /etc/apt/keyrings

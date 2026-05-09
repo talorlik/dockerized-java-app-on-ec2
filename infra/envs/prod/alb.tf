@@ -218,8 +218,8 @@ module "alb" {
   target_groups = {
     app = {
       name                 = "${local.name_prefix}-tg"
-      backend_protocol     = "HTTP"
-      backend_port         = local.app_port
+      protocol             = "HTTP"
+      port                 = local.app_port
       target_type          = "instance"
       deregistration_delay = 30
       protocol_version     = "HTTP1"
