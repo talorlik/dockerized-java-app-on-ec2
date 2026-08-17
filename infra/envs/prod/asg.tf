@@ -61,7 +61,7 @@ locals {
 module "asg" {
   # checkov:skip=CKV_TF_1:source pinned via registry tag (~> 7.7). Commit-hash pinning rejected for upstream-maintained modules; CKV_TF_2 (tag pin) covers the supply-chain intent.
   source  = "terraform-aws-modules/autoscaling/aws"
-  version = "~> 7.7"
+  version = "7.7.0"
 
   name = "${local.name_prefix}-asg"
 

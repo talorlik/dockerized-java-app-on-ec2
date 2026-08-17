@@ -13,7 +13,7 @@
 module "vpc" {
   # checkov:skip=CKV_TF_1:source pinned via registry tag (~> 5.13). Commit-hash pinning rejected for upstream-maintained modules; CKV_TF_2 (tag pin) covers the supply-chain intent.
   source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 5.13"
+  version = "5.21.0"
 
   name = "${local.name_prefix}-vpc"
   cidr = var.vpc_cidr
