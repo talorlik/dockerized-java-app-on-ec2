@@ -163,7 +163,7 @@ resource "aws_s3_bucket_policy" "alb_logs" {
 module "alb" {
   # checkov:skip=CKV_TF_1:source pinned via registry tag (~> 9.10). Commit-hash pinning rejected for upstream-maintained modules; CKV_TF_2 (tag pin) covers the supply-chain intent.
   source  = "terraform-aws-modules/alb/aws"
-  version = "~> 9.10"
+  version = "9.17.0"
 
   name               = "${local.name_prefix}-alb"
   load_balancer_type = "application"

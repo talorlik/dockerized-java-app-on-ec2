@@ -57,7 +57,7 @@ resource "aws_db_parameter_group" "mysql" {
 module "rds" {
   # checkov:skip=CKV_TF_1:source pinned via registry tag (~> 6.10). Commit-hash pinning rejected for upstream-maintained modules; CKV_TF_2 (tag pin) covers the supply-chain intent.
   source  = "terraform-aws-modules/rds/aws"
-  version = "~> 6.10"
+  version = "6.13.1"
 
   identifier = "${local.name_prefix}-mysql"
 
