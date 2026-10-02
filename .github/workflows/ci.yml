@@ -230,7 +230,7 @@ jobs:
       - run: tflint --init && tflint --recursive
 
       - name: checkov
-        uses: bridgecrewio/checkov-action@9201a8e6eaa919e3444d7c4ca691896efde4f033 # v12
+        uses: bridgecrewio/checkov-action@cc0e17d456ef1713bbfd963ebac19dc776775cb2 # v12
         with:
           directory: infra
           framework: terraform
