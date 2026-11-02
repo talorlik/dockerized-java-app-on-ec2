@@ -36,7 +36,7 @@
             (unverified - confirm against Maven Central before pinning if
             the container coords change.)
         -->
-        <testcontainers.version>1.21.3</testcontainers.version>
+        <testcontainers.version>1.21.4</testcontainers.version>
         <bucket4j.version>8.10.1</bucket4j.version>
         <!--
             docker-java pinned ahead of Spring Boot 3.5.0 BOM's older default.
