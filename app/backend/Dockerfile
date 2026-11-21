@@ -6,7 +6,7 @@
 ###############################################################################
 
 # ----- builder -----
-FROM maven:3.9-eclipse-temurin-21 AS builder
+FROM maven:3.9-eclipse-temurin-21@sha256:99e61abcff91a9b1333463bd8451fb18495d6eba9250ac66a338b518f8278320 AS builder
 WORKDIR /build
 
 # Cache dependencies first
@@ -17,7 +17,7 @@ COPY src ./src
 RUN mvn -B -q -DskipTests package
 
 # ----- runtime -----
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM eclipse-temurin:21-jre-alpine@sha256:5d7689f47d670aca766b9503a70bccc2d73b4eb9221ae8f714ae958313c4ce70 AS runtime
 
 # Non-root
 RUN addgroup -S app && adduser -S -G app app
